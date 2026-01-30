@@ -1,0 +1,36 @@
+{
+  "id": "two-step-gap",
+  "title": "两步题断层",
+  "goal": "条件 A 推不出结论 B？中间缺个‘桥’！",
+  "steps": [
+    {
+      "svg": "step-1.svg",
+      "caption": "问题两头堵",
+      "tip": "已知 A，想求 B，直接推推不动？"
+    },
+    {
+      "svg": "step-2.svg",
+      "caption": "中间找个土",
+      "tip": "找一个中间量 C（桥梁）。"
+    },
+    {
+      "svg": "step-3.svg",
+      "caption": "两步",
+      "tip": "先由 A 推出 C，再由 C 推出 B。"
+    },
+    {
+      "svg": "step-4.svg",
+      "caption": "变一步",
+      "tip": "把复杂的逻辑拆成两个简单的单步！"
+    }
+  ],
+  "check": {
+    "question": "当已知条件推不出结论时，应该？",
+    "options": [
+      "放弃",
+      "寻找中间量（搭桥）",
+      "乱猜"
+    ],
+    "answer": "寻找中间量（搭桥）"
+  }
+}

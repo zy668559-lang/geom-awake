@@ -1,0 +1,84 @@
+{
+  "id": "0f90b0b6-da3f-4af0-b817-bff795b6a4ec",
+  "timestamp": "2026-01-20T06:32:36.190Z",
+  "model": {
+    "id": "k-model",
+    "name": "一线三等角 (K字模型)",
+    "points": [
+      {
+        "x": 50,
+        "y": 200,
+        "label": "B"
+      },
+      {
+        "x": 150,
+        "y": 200,
+        "label": "C"
+      },
+      {
+        "x": 250,
+        "y": 200,
+        "label": "D"
+      },
+      {
+        "x": 50,
+        "y": 100,
+        "label": "A"
+      },
+      {
+        "x": 250,
+        "y": 120,
+        "label": "E"
+      }
+    ],
+    "lines": [
+      {
+        "start": "B",
+        "end": "D"
+      },
+      {
+        "start": "A",
+        "end": "B"
+      },
+      {
+        "start": "E",
+        "end": "D"
+      },
+      {
+        "start": "A",
+        "end": "C"
+      },
+      {
+        "start": "C",
+        "end": "E"
+      }
+    ],
+    "initialHint": "看到直角和直线，能不能凑出互余？",
+    "target": "已知AB⊥BD, ED⊥BD, AC⊥CE。求证 △ABC ∽ △CDE",
+    "relations": [
+      "∠B=∠D=90°",
+      "∠ACB+∠DCE=90°",
+      "∠A+∠ACB=90°",
+      "∠A=∠DCE"
+    ],
+    "proofSteps": [
+      "∵ AB⊥BD, ED⊥BD",
+      "∴ ∠B = ∠D = 90°",
+      "∵ AC⊥CE",
+      "∴ ∠ACE = 90°",
+      "∴ ∠ACB + ∠DCE = 90°",
+      "又 ∵ ∠A + ∠ACB = 90°",
+      "∴ ∠A = ∠DCE",
+      "∴ △ABC ∽ △CDE"
+    ]
+  },
+  "operations": [
+    "用户选择了关系: ∠B=∠D=90°"
+  ],
+  "transcript": [
+    "AI: 你好呀！我是你的AI几何教练。今天我们来攻克【相似三角形 (A字型)】。\n\n平行线分线段成比例？",
+    "AI: 你好呀！我是你的AI几何教练。今天我们来攻克【一线三等角 (K字模型)】。\n\n看到直角和直线，能不能凑出互余？",
+    "User: 我觉得这步可以用：∠B=∠D=90°"
+  ],
+  "report": null
+}

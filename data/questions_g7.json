@@ -1,0 +1,112 @@
+[
+  {
+    "id": "g7_001",
+    "grade": 7,
+    "tags": ["基础动作", "M1_MIDPOINT"],
+    "title": "中点基础识别",
+    "stem": "如图，D是BC的中点。",
+    "figure": "",
+    "question": "若AB=AC，连接AD，则AD与BC的位置关系是？",
+    "answer": "垂直",
+    "solution_outline": "看到等腰三角形和底边中点，直接想三线合一，AD即是中线也是垂线。"
+  },
+  {
+    "id": "g7_002",
+    "grade": 7,
+    "tags": ["基础动作", "M2_ANGLE"],
+    "title": "角平分线模型",
+    "stem": "AD平分∠BAC，DE⊥AB，DF⊥AC。",
+    "figure": "",
+    "question": "求证：DE=DF。",
+    "answer": "DE=DF",
+    "solution_outline": "角平分线上的点到角两边的距离相等。"
+  },
+  {
+    "id": "g7_003",
+    "grade": 7,
+    "tags": ["M4_PARALLEL", "条件落图"],
+    "title": "平行线拐点模型",
+    "stem": "AB∥CD，点P在两平行线之间。",
+    "figure": "",
+    "question": "若∠A=30°，∠C=40°，求∠APC的度数。",
+    "answer": "70°",
+    "solution_outline": "过P点作平行线，利用内错角相等，30+40=70。"
+  },
+  {
+    "id": "g7_004",
+    "grade": 7,
+    "tags": ["基础动作", "M1_MIDPOINT", "条件落图"],
+    "title": "倍长中线",
+    "stem": "AD是△ABC的中线。",
+    "figure": "",
+    "question": "延长AD到E，使DE=AD，连接BE。求证：△ADC≌△EDB。",
+    "answer": "略",
+    "solution_outline": "利用SAS证明全等（AD=DE, BD=CD, ∠ADC=∠EDB）。"
+  },
+  {
+    "id": "g7_005",
+    "grade": 7,
+    "tags": ["基础动作", "M1_MIDPOINT", "条件落图"],
+    "title": "中点-倍长中线变式",
+    "stem": "AD是△ABC的中线，E是AD中点。",
+    "figure": "",
+    "question": "延长BE交AC于F，若AC=12，求AF/FC（需辅助线）。",
+    "answer": "1/2",
+    "solution_outline": "过D作DG∥BF交AC于G，利用中位线定理求解。"
+  },
+  {
+    "id": "g7_006",
+    "grade": 7,
+    "tags": ["M2_ANGLE", "基础动作"],
+    "title": "角平分线+平行",
+    "stem": "AD平分∠BAC，DE∥AC交AB于E。",
+    "figure": "",
+    "question": "判断△ADE的形状。",
+    "answer": "等腰三角形",
+    "solution_outline": "角平分线+平行=等腰三角形。"
+  },
+  {
+    "id": "g7_007",
+    "grade": 7,
+    "tags": ["M3_SIMILAR", "基础动作"],
+    "title": "A字模型基础",
+    "stem": "DE∥BC，分别交AB、AC于D、E。",
+    "figure": "",
+    "question": "若AD=2，DB=1，DE=4，求BC。",
+    "answer": "6",
+    "solution_outline": "△ADE∽△ABC，相似比为2:3，BC=4*(3/2)=6。"
+  },
+  {
+    "id": "g7_008",
+    "grade": 7,
+    "tags": ["M3_SIMILAR"],
+    "title": "X字模型基础",
+    "stem": "AB∥CD，AD与BC交于点O。",
+    "figure": "",
+    "question": "若AO=2，OD=3，AB=4，求CD。",
+    "answer": "6",
+    "solution_outline": "△AOB∽△DOC，相似比2:3，CD=4*(3/2)=6。"
+  },
+  {
+    "id": "g7_009",
+    "grade": 7,
+    "tags": ["基础动作", "M1_MIDPOINT"],
+    "title": "斜边中线",
+    "stem": "Rt△ABC中，∠ACB=90°，CD是AB边上的中线。",
+    "figure": "",
+    "question": "若CD=5，求AB。",
+    "answer": "10",
+    "solution_outline": "直角三角形斜边中线等于斜边的一半，AB=2CD=10。"
+  },
+  {
+    "id": "g7_010",
+    "grade": 7,
+    "tags": ["两步题", "M1_MIDPOINT"],
+    "title": "中点综合应用",
+    "stem": "四边形ABCD中，E、F、G、H分别是四边中点。",
+    "figure": "",
+    "question": "判断四边形EFGH的形状。",
+    "answer": "平行四边形",
+    "solution_outline": "连接对角线，利用三角形中位线定理证明EF∥AC且EF=AC/2，HG∥AC且HG=AC/2。"
+  }
+]

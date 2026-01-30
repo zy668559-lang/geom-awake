@@ -1,0 +1,36 @@
+{
+  "id": "midpoint-model",
+  "title": "中点模型",
+  "goal": "看到中点，条件反射想到‘倍长中线’或‘中位线’。",
+  "steps": [
+    {
+      "svg": "step-1.svg",
+      "caption": "见中点",
+      "tip": "题目给了 D 是 BC 中点，太孤单了。"
+    },
+    {
+      "svg": "step-2.svg",
+      "caption": "想倍长",
+      "tip": "延长 AD 到 E，让 DE = AD。"
+    },
+    {
+      "svg": "step-3.svg",
+      "caption": "构造全等",
+      "tip": "连接 BE，瞬间造出 △ADC ≌ △EDB。"
+    },
+    {
+      "svg": "step-4.svg",
+      "caption": "帮帮忙",
+      "tip": "原本不挨着的边和角，现在全转移过来了！"
+    }
+  ],
+  "check": {
+    "question": "倍长中线后，通常能得到什么关系？",
+    "options": [
+      "全等三角形",
+      "相似三角形",
+      "直角三角形"
+    ],
+    "answer": "全等三角形"
+  }
+}

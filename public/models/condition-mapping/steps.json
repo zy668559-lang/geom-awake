@@ -1,0 +1,36 @@
+{
+  "id": "condition-mapping",
+  "title": "条件落图",
+  "goal": "看到文字条件，必须立刻在图上做标记，不漏任何一个。",
+  "steps": [
+    {
+      "svg": "step-1.svg",
+      "caption": "读一句",
+      "tip": "眼睛看题目：'AB = AC'"
+    },
+    {
+      "svg": "step-2.svg",
+      "caption": "画一笔",
+      "tip": "手在图上画：给 AB 和 AC 打上等腰标记"
+    },
+    {
+      "svg": "step-3.svg",
+      "caption": "条件不丢",
+      "tip": "再读：'∠A=60°'，马上在角A处标上60度"
+    },
+    {
+      "svg": "step-4.svg",
+      "caption": "才合理",
+      "tip": "只有把条件都‘搬’到图上，大脑才能思考！"
+    }
+  ],
+  "check": {
+    "question": "如果题目说‘BD平分∠ABC’，你应该立刻在图上做什么？",
+    "options": [
+      "读下一句",
+      "在∠ABD和∠CBD处标上相等的角符号",
+      "列出方程"
+    ],
+    "answer": "在∠ABD和∠CBD处标上相等的角符号"
+  }
+}

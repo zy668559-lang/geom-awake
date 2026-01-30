@@ -1,0 +1,36 @@
+{
+  "id": "congruence-trigger",
+  "title": "全等触发",
+  "goal": "要证全等，就像‘集齐龙珠’，必须凑够三个条件。",
+  "steps": [
+    {
+      "svg": "step-1.svg",
+      "caption": "三边三角",
+      "tip": "盯着两个三角形，心里列清单：边、角、边..."
+    },
+    {
+      "svg": "step-2.svg",
+      "caption": "凑三个",
+      "tip": "已知 AB=DE (1)，∠B=∠E (2)，还差一个！"
+    },
+    {
+      "svg": "step-3.svg",
+      "caption": "全等判定",
+      "tip": "找到 BC=EF (3)！SAS 达成！"
+    },
+    {
+      "svg": "step-4.svg",
+      "caption": "跑不脱",
+      "tip": "三个条件一齐，全等立刻成立！"
+    }
+  ],
+  "check": {
+    "question": "证明全等至少需要几个条件（其中至少一个是边）？",
+    "options": [
+      "1个",
+      "2个",
+      "3个"
+    ],
+    "answer": "3个"
+  }
+}

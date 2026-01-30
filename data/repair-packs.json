@@ -1,0 +1,228 @@
+[
+  {
+    "id": "RP_MIDPOINT_DOUBLE",
+    "tagCombination": {
+      "breakStep": "画线",
+      "signal": "中点",
+      "tool": "倍长中线",
+      "topic": "全等"
+    },
+    "mantra": "见中点，想倍长，构造全等帮帮忙！",
+    "why": "因为中点把线段分两半，倍长后能造出‘8字型’全等，把分散的条件聚在一起。",
+    "thinkingTemplate": [
+      "1. 看到线段上有中点（或中线），马上反应：能不能倍长？",
+      "2. 延长 AD 到 E，使 DE = AD，连接 BE（或 CE）。",
+      "3. 马上证全等：△ADC ≌ △EDB（对顶角+边角边）。",
+      "4. 得到新结论：BE = AC，BE // AC，转移边角关系。"
+    ],
+    "modelDemo": {
+      "title": "倍长中线模型演示",
+      "description": "延长中线，构造全等三角形",
+      "imageUrl": "/models/midpoint-double.svg",
+      "steps": [
+          {
+              "imageUrl": "/models/midpoint-double/step1.svg",
+              "description": "如图，AD是△ABC的中线。",
+              "mantraKeyword": "见中点"
+          },
+          {
+              "imageUrl": "/models/midpoint-double/step2.svg",
+              "description": "延长AD到E，使DE = AD。",
+              "mantraKeyword": "想倍长"
+          },
+          {
+              "imageUrl": "/models/midpoint-double/step3.svg",
+              "description": "连接BE，构造出△ACD ≌ △EBD。",
+              "mantraKeyword": "构造全等"
+          },
+          {
+              "imageUrl": "/models/midpoint-double/step4.svg",
+              "description": "得到 BE = AC，BE // AC，转移边角关系。",
+              "mantraKeyword": "帮帮忙"
+          }
+      ]
+    },
+    "example": {
+      "id": "EX_MID_001",
+      "grade": 8,
+      "model": "M1_MIDPOINT",
+      "type": "TRAIN",
+      "svg": {
+        "points": [
+          { "x": 10, "y": 90, "label": "B" },
+          { "x": 90, "y": 90, "label": "C" },
+          { "x": 50, "y": 10, "label": "A" },
+          { "x": 50, "y": 90, "label": "D" }
+        ],
+        "lines": [
+          { "start": "A", "end": "B" },
+          { "start": "B", "end": "C" },
+          { "start": "C", "end": "A" },
+          { "start": "A", "end": "D" }
+        ]
+      },
+      "interactiveType": "DRAW_LINE",
+      "steps": [
+        {
+          "index": 1,
+          "type": "CHOOSE_RULE",
+          "prompt": "题目给了中点 D，你想到了什么辅助线？",
+          "options": ["作垂线", "倍长中线 AD", "连接 BC"],
+          "correctActions": ["倍长中线 AD"],
+          "wrongSignals": {
+            "作垂线": "画线想不到",
+            "连接 BC": "条件看不出"
+          },
+          "coachHints": {
+            "作垂线": "中点通常不直接作垂线哦，除非是等腰三角形。",
+            "连接 BC": "BC 已经连接了呀，想一想怎么利用 AD 是中线？"
+          }
+        },
+        {
+          "index": 2,
+          "type": "SELECT_TARGET",
+          "prompt": "倍长之后，哪两个三角形全等？",
+          "options": ["△ABD 和 △ACD", "△ACD 和 △EBD"],
+          "correctActions": ["△ACD 和 △EBD"],
+          "wrongSignals": {
+            "△ABD 和 △ACD": "模型选不出"
+          },
+          "coachHints": {
+            "△ABD 和 △ACD": "这两个三角形不一定全等哦，看看我们要构造的那个。"
+          }
+        }
+      ]
+    },
+    "microPractice": [
+      {
+        "id": "MICRO_MID_001",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": [
+          {
+            "index": 1,
+            "type": "CHOOSE_RULE",
+            "prompt": "微练1：如图，AD是中线，AB=5，AC=3，则AD的取值范围是？",
+            "options": ["2 < AD < 8", "1 < AD < 4", "AD > 2"],
+            "correctActions": ["1 < AD < 4"],
+            "wrongSignals": {},
+            "coachHints": {}
+          }
+        ]
+      },
+       {
+        "id": "MICRO_MID_002",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": [
+          {
+            "index": 1,
+            "type": "CHOOSE_RULE",
+            "prompt": "微练2：倍长中线的主要目的是什么？",
+            "options": ["构造直角", "转移边角关系", "证明平行"],
+            "correctActions": ["转移边角关系"],
+            "wrongSignals": {},
+            "coachHints": {}
+          }
+        ]
+      },
+       {
+        "id": "MICRO_MID_003",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": [
+          {
+            "index": 1,
+            "type": "CHOOSE_RULE",
+            "prompt": "微练3：看到中线，除了倍长，还可能用到什么？",
+            "options": ["中位线", "勾股定理", "垂径定理"],
+            "correctActions": ["中位线"],
+            "wrongSignals": {},
+            "coachHints": {}
+          }
+        ]
+      },
+       {
+        "id": "MICRO_MID_004",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": [
+          {
+            "index": 1,
+            "type": "CHOOSE_RULE",
+            "prompt": "微练4：构造全等后，对应边什么关系？",
+            "options": ["相等", "平行", "垂直"],
+            "correctActions": ["相等"],
+            "wrongSignals": {},
+            "coachHints": {}
+          }
+        ]
+      },
+       {
+        "id": "MICRO_MID_005",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": [
+          {
+            "index": 1,
+            "type": "CHOOSE_RULE",
+            "prompt": "微练5：倍长中线是唯一的辅助线方法吗？",
+            "options": ["是", "不是"],
+            "correctActions": ["不是"],
+            "wrongSignals": {},
+            "coachHints": {}
+          }
+        ]
+      }
+    ],
+    "variation": [
+       {
+        "id": "VAR_MID_001",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": []
+       }
+    ],
+    "deep": [
+        {
+        "id": "DEEP_MID_001",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": []
+       }
+    ],
+    "retest1": [
+         {
+        "id": "RETEST1_MID_001",
+        "grade": 8,
+        "model": "M1_MIDPOINT",
+        "type": "TRAIN",
+        "svg": { "points": [], "lines": [] },
+        "interactiveType": "CHOICE",
+        "steps": []
+       }
+    ],
+    "retest2": []
+  }
+]

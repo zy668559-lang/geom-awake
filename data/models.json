@@ -1,0 +1,602 @@
+[
+  {
+    "id": "q_7_checkup_1",
+    "grade": 7,
+    "model": "M2_ANGLE",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 100, "label": "A" }, { "x": 250, "y": 100, "label": "B" },
+        { "x": 50, "y": 200, "label": "C" }, { "x": 250, "y": 200, "label": "D" },
+        { "x": 100, "y": 50, "label": "E" }, { "x": 200, "y": 250, "label": "F" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" },
+        { "start": "E", "end": "F" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（角追信号）图中出现一组平行线，问：你第一反应应该先做什么？",
+        "options": [
+          "先标同位角/内错角，把角度链写出来（角追）",
+          "先找中点去做相似",
+          "先把圆心连起来"
+        ],
+        "correctActions": ["先标同位角/内错角，把角度链写出来（角追）"],
+        "wrongSignals": {
+          "先找中点去做相似": "条件看不出",
+          "先把圆心连起来": "条件看不出"
+        },
+        "coachHints": {
+          "default": "看见平行，先追角。",
+          "先找中点去做相似": "图里有中点吗？别瞎想。",
+          "先把圆心连起来": "图里有圆吗？仔细看。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_7_checkup_2",
+    "grade": 7,
+    "model": "M1_MIDPOINT",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" },
+        { "x": 250, "y": 250, "label": "C" },
+        { "x": 100, "y": 150, "label": "M" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "A", "end": "C" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（中点信号）题干出现“中点/等分”，你最先要下哪类线？",
+        "options": [
+          "先把“中点相关线”连出来，让相似/平行有机会出现",
+          "先套勾股",
+          "先算角度"
+        ],
+        "correctActions": ["先把“中点相关线”连出来，让相似/平行有机会出现"],
+        "wrongSignals": {
+          "先套勾股": "画线想不到",
+          "先算角度": "画线想不到"
+        },
+        "coachHints": {
+          "default": "看见中点，先让相似出现。",
+          "先套勾股": "那是直角三角形才用的。",
+          "先算角度": "没有角度数据，算不出来的。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_7_checkup_3",
+    "grade": 7,
+    "model": "M3_SIMILAR",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" },
+        { "x": 250, "y": 250, "label": "C" },
+        { "x": 150, "y": 150, "label": "D" }, { "x": 200, "y": 250, "label": "E" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "A", "end": "C" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（相似工具）要用相似，最关键的“触发条件”通常是哪类？",
+        "options": [
+          "两角相等（或一角相等+对应边成比例）",
+          "三边都相等",
+          "出现圆就一定相似"
+        ],
+        "correctActions": ["两角相等（或一角相等+对应边成比例）"],
+        "wrongSignals": {
+          "三边都相等": "模型选不出",
+          "出现圆就一定相似": "模型选不出"
+        },
+        "coachHints": {
+          "default": "相似先拿角，再谈比例。",
+          "三边都相等": "那是全等哦。",
+          "出现圆就一定相似": "圆只是背景，得看具体条件。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_8_checkup_1",
+    "grade": 8,
+    "model": "M2_ANGLE",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 100, "label": "A" }, { "x": 250, "y": 100, "label": "B" },
+        { "x": 50, "y": 200, "label": "C" }, { "x": 250, "y": 200, "label": "D" },
+        { "x": 100, "y": 50, "label": "E" }, { "x": 200, "y": 250, "label": "F" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" },
+        { "start": "E", "end": "F" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（8年级平行线）图中出现一组平行线，问：你第一反应应该先做什么？",
+        "options": [
+          "先标同位角/内错角，把角度链写出来（角追）",
+          "先找中点去做相似",
+          "先把圆心连起来"
+        ],
+        "correctActions": ["先标同位角/内错角，把角度链写出来（角追）"],
+        "wrongSignals": {
+          "先找中点去做相似": "条件看不出",
+          "先把圆心连起来": "条件看不出"
+        },
+        "coachHints": {
+          "default": "看见平行，先追角。",
+          "先找中点去做相似": "图里有中点吗？别瞎想。",
+          "先把圆心连起来": "图里有圆吗？仔细看。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_8_checkup_2",
+    "grade": 8,
+    "model": "M1_MIDPOINT",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" },
+        { "x": 250, "y": 250, "label": "C" },
+        { "x": 100, "y": 150, "label": "M" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "A", "end": "C" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（8年级中点）题干出现“中点/等分”，你最先要下哪类线？",
+        "options": [
+          "先把“中点相关线”连出来，让相似/平行有机会出现",
+          "先套勾股",
+          "先算角度"
+        ],
+        "correctActions": ["先把“中点相关线”连出来，让相似/平行有机会出现"],
+        "wrongSignals": {
+          "先套勾股": "画线想不到",
+          "先算角度": "画线想不到"
+        },
+        "coachHints": {
+          "default": "看见中点，先让相似出现。",
+          "先套勾股": "那是直角三角形才用的。",
+          "先算角度": "没有角度数据，算不出来的。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_8_checkup_3",
+    "grade": 8,
+    "model": "M3_SIMILAR",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" },
+        { "x": 250, "y": 250, "label": "C" },
+        { "x": 150, "y": 150, "label": "D" }, { "x": 200, "y": 250, "label": "E" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "A", "end": "C" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（8年级相似）要用相似，最关键的“触发条件”通常是哪类？",
+        "options": [
+          "两角相等（或一角相等+对应边成比例）",
+          "三边都相等",
+          "出现圆就一定相似"
+        ],
+        "correctActions": ["两角相等（或一角相等+对应边成比例）"],
+        "wrongSignals": {
+          "三边都相等": "模型选不出",
+          "出现圆就一定相似": "模型选不出"
+        },
+        "coachHints": {
+          "default": "相似先拿角，再谈比例。",
+          "三边都相等": "那是全等哦。",
+          "出现圆就一定相似": "圆只是背景，得看具体条件。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_9_checkup_1",
+    "grade": 9,
+    "model": "M2_ANGLE",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 100, "label": "A" }, { "x": 250, "y": 100, "label": "B" },
+        { "x": 50, "y": 200, "label": "C" }, { "x": 250, "y": 200, "label": "D" },
+        { "x": 100, "y": 50, "label": "E" }, { "x": 200, "y": 250, "label": "F" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" },
+        { "start": "E", "end": "F" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（9年级角追）图中出现一组平行线，问：你第一反应应该先做什么？",
+        "options": [
+          "先标同位角/内错角，把角度链写出来（角追）",
+          "先找中点去做相似",
+          "先把圆心连起来"
+        ],
+        "correctActions": ["先标同位角/内错角，把角度链写出来（角追）"],
+        "wrongSignals": {
+          "先找中点去做相似": "条件看不出",
+          "先把圆心连起来": "条件看不出"
+        },
+        "coachHints": {
+          "default": "看见平行，先追角。",
+          "先找中点去做相似": "图里有中点吗？别瞎想。",
+          "先把圆心连起来": "图里有圆吗？仔细看。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_9_checkup_2",
+    "grade": 9,
+    "model": "M1_MIDPOINT",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" },
+        { "x": 250, "y": 250, "label": "C" },
+        { "x": 100, "y": 150, "label": "M" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "A", "end": "C" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（9年级中点）题干出现“中点/等分”，你最先要下哪类线？",
+        "options": [
+          "先把“中点相关线”连出来，让相似/平行有机会出现",
+          "先套勾股",
+          "先算角度"
+        ],
+        "correctActions": ["先把“中点相关线”连出来，让相似/平行有机会出现"],
+        "wrongSignals": {
+          "先套勾股": "画线想不到",
+          "先算角度": "画线想不到"
+        },
+        "coachHints": {
+          "default": "看见中点，先让相似出现。",
+          "先套勾股": "那是直角三角形才用的。",
+          "先算角度": "没有角度数据，算不出来的。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_9_checkup_3",
+    "grade": 9,
+    "model": "M3_SIMILAR",
+    "type": "CHECKUP",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" },
+        { "x": 250, "y": 250, "label": "C" },
+        { "x": 150, "y": 150, "label": "D" }, { "x": 200, "y": 250, "label": "E" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "A", "end": "C" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "（9年级相似）要用相似，最关键的“触发条件”通常是哪类？",
+        "options": [
+          "两角相等（或一角相等+对应边成比例）",
+          "三边都相等",
+          "出现圆就一定相似"
+        ],
+        "correctActions": ["两角相等（或一角相等+对应边成比例）"],
+        "wrongSignals": {
+          "三边都相等": "模型选不出",
+          "出现圆就一定相似": "模型选不出"
+        },
+        "coachHints": {
+          "default": "相似先拿角，再谈比例。",
+          "三边都相等": "那是全等哦。",
+          "出现圆就一定相似": "圆只是背景，得看具体条件。"
+        }
+      }
+    ]
+  },
+  {
+    "id": "q_train_m1_1",
+    "grade": 7,
+    "model": "M1_MIDPOINT",
+    "type": "TRAIN",
+    "svg": {
+      "points": [{"x": 100, "y": 100, "label": "A"}, {"x": 200, "y": 100, "label": "B"}],
+      "lines": [{"start": "A", "end": "B"}]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "D1：题里出现中点→你只做一件事：",
+        "options": ["把中点连到顶点（或作平行）", "证明全等", "不管它"],
+        "correctActions": ["把中点连到顶点（或作平行）"],
+        "wrongSignals": {"证明全等": "画线想不到", "不管它": "画线想不到"},
+        "coachHints": {"default": "中点要连线！"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m1_2",
+    "grade": 7,
+    "model": "M1_MIDPOINT",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" }, { "x": 150, "y": 250, "label": "B" }
+      ],
+      "lines": [{ "start": "A", "end": "B" }]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "D2：同样中点，但换位置→你仍然先下那一根线",
+        "options": ["连中点", "找垂直", "找角平分线"],
+        "correctActions": ["连中点"],
+        "wrongSignals": {"找垂直": "画线想不到"},
+        "coachHints": {"default": "不管在哪，看见中点先连线。"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m1_3",
+    "grade": 7,
+    "model": "M1_MIDPOINT",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 150, "label": "A" }, { "x": 250, "y": 150, "label": "B" },
+        { "x": 116, "y": 150, "label": "C" }, { "x": 183, "y": 150, "label": "D" }
+      ],
+      "lines": [{ "start": "A", "end": "B" }]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "V1：把“中点”换成“等分点”，策略变吗？",
+        "options": ["不变，依然连线凑比例", "变了，不能用了"],
+        "correctActions": ["不变，依然连线凑比例"],
+        "wrongSignals": {"变了，不能用了": "模型选不出"},
+        "coachHints": {"default": "等分点就是多个中点，策略一样。"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m2_1",
+    "grade": 7,
+    "model": "M2_ANGLE",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 100, "label": "A" }, { "x": 250, "y": 100, "label": "B" },
+        { "x": 50, "y": 200, "label": "C" }, { "x": 250, "y": 200, "label": "D" },
+        { "x": 100, "y": 50, "label": "E" }, { "x": 200, "y": 250, "label": "F" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" },
+        { "start": "E", "end": "F" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "D1：平行线→先标同位角（不算，先标）",
+        "options": ["同意", "不同意，直接算"],
+        "correctActions": ["同意"],
+        "wrongSignals": {"不同意，直接算": "步骤算断"},
+        "coachHints": {"default": "不标角容易漏条件。"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m2_2",
+    "grade": 7,
+    "model": "M2_ANGLE",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 100, "label": "A" }, { "x": 200, "y": 100, "label": "B" },
+        { "x": 100, "y": 200, "label": "C" }, { "x": 250, "y": 200, "label": "D" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "C", "end": "D" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "D2：平行线→用内错角把两个三角形角联系起来",
+        "options": ["找Z字型", "找F字型", "找U字型"],
+        "correctActions": ["找Z字型"],
+        "wrongSignals": {"找F字型": "模型选不出"},
+        "coachHints": {"default": "内错角是Z字型。"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m2_3",
+    "grade": 7,
+    "model": "M2_ANGLE",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 100, "y": 50, "label": "A" }, { "x": 100, "y": 250, "label": "B" },
+        { "x": 200, "y": 50, "label": "C" }, { "x": 200, "y": 250, "label": "D" },
+        { "x": 50, "y": 100, "label": "E" }, { "x": 250, "y": 200, "label": "F" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" },
+        { "start": "E", "end": "F" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "V3：换图形摆放，平行线竖着放，还追角吗？",
+        "options": ["追，平行必追角", "不追了"],
+        "correctActions": ["追，平行必追角"],
+        "wrongSignals": {"不追了": "模型选不出"},
+        "coachHints": {"default": "形状变了，性质不变。"}
+      }
+    ]
+  },
+   {
+    "id": "q_train_m3_1",
+    "grade": 7,
+    "model": "M3_SIMILAR",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" },
+        { "x": 50, "y": 250, "label": "B" }, { "x": 250, "y": 250, "label": "C" },
+        { "x": 100, "y": 150, "label": "D" }, { "x": 200, "y": 150, "label": "E" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "B", "end": "C" }, { "start": "C", "end": "A" },
+        { "start": "D", "end": "E" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "D1：先找一对相等角（不急着列比例）",
+        "options": ["先找角", "先列式"],
+        "correctActions": ["先找角"],
+        "wrongSignals": {"先列式": "步骤算断"},
+        "coachHints": {"default": "没有角相等，比例不成立。"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m3_2",
+    "grade": 7,
+    "model": "M3_SIMILAR",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 50, "y": 50, "label": "A" }, { "x": 250, "y": 50, "label": "B" },
+        { "x": 50, "y": 250, "label": "C" }, { "x": 250, "y": 250, "label": "D" }
+      ],
+      "lines": [
+        { "start": "A", "end": "D" }, { "start": "B", "end": "C" },
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "D3：相似成立后只做一件事：",
+        "options": ["写对应边比例", "量长度", "猜答案"],
+        "correctActions": ["写对应边比例"],
+        "wrongSignals": {"量长度": "理由写不出"},
+        "coachHints": {"default": "相似就是为了比例。"}
+      }
+    ]
+  },
+  {
+    "id": "q_train_m3_3",
+    "grade": 7,
+    "model": "M3_SIMILAR",
+    "type": "TRAIN",
+    "svg": {
+      "points": [
+        { "x": 150, "y": 50, "label": "A" }, { "x": 150, "y": 250, "label": "B" },
+        { "x": 100, "y": 150, "label": "C" }, { "x": 200, "y": 150, "label": "D" }
+      ],
+      "lines": [
+        { "start": "A", "end": "B" }, { "start": "C", "end": "D" }
+      ]
+    },
+    "interactiveType": "step-by-step",
+    "steps": [
+      {
+        "index": 1,
+        "type": "CHOOSE_RULE",
+        "prompt": "V2：平行换成圆周角，还相似吗？",
+        "options": ["相似，因为角相等", "不相似"],
+        "correctActions": ["相似，因为角相等"],
+        "wrongSignals": {"不相似": "模型选不出"},
+        "coachHints": {"default": "只要有两角相等，就是相似。"}
+      }
+    ]
+  }
+]

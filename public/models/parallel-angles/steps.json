@@ -1,0 +1,36 @@
+{
+  "id": "parallel-angles",
+  "title": "平行线角关系",
+  "goal": "看到平行线，马上找到 Z型、F型、U型 角。",
+  "steps": [
+    {
+      "svg": "step-1.svg",
+      "caption": "两直线平行",
+      "tip": "找到题目中的平行线 AB // CD"
+    },
+    {
+      "svg": "step-2.svg",
+      "caption": "找 Z 型",
+      "tip": "沿着截线找‘Z’字，内错角相等！"
+    },
+    {
+      "svg": "step-3.svg",
+      "caption": "找 F 型",
+      "tip": "沿着截线找‘F’字，同位角相等！"
+    },
+    {
+      "svg": "step-4.svg",
+      "caption": "找 U 型",
+      "tip": "沿着截线找‘U’字，同旁内角互补！"
+    }
+  ],
+  "check": {
+    "question": "看到平行线和截线组成的'Z'字形，哪对角相等？",
+    "options": [
+      "同位角",
+      "内错角",
+      "同旁内角"
+    ],
+    "answer": "内错角"
+  }
+}

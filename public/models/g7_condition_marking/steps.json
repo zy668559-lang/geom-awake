@@ -1,0 +1,10 @@
+{
+  "modelId": "g7_condition_marking",
+  "title": "条件先落图（别急着画线）",
+  "steps": [
+    { "svg": "step-1.svg", "caption": "先把已知点标到图上", "tip": "点没标清，后面一定乱" },
+    { "svg": "step-2.svg", "caption": "把平行/垂直用符号标出来", "tip": "先把‘关系’落在图上" },
+    { "svg": "step-3.svg", "caption": "把等角/等边标出来", "tip": "等=你后面推理的抓手" },
+    { "svg": "step-4.svg", "caption": "最后再动手画线", "tip": "先有信号，再画线" }
+  ]
+}

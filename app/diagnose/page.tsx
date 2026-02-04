@@ -11,43 +11,50 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 function DiagnoseContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const grade = Number(searchParams.get('grade') || 7);
+  const grade = Number(searchParams.get('grade') || 8);
 
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [allLogs, setAllLogs] = useState<StepLog[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Load first question on mount
   useEffect(() => {
-    async function loadQuestions() {
-        // Load 3 random questions for diagnosis
-        const qs = await mockProvider.getQuestions({ grade, n: 3 });
-        setQuestions(qs);
-    }
-    loadQuestions();
+    loadNextQuestion([]);
   }, [grade]);
 
+  const loadNextQuestion = async (logs: StepLog[]) => {
+    setIsLoading(true);
+    try {
+      const nextQ = await mockProvider.getNextQuestion({ grade, previousLogs: logs });
+      setCurrentQuestion(nextQ);
+    } catch (error) {
+      console.error("Failed to load question:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleQuestionFinish = async (isCorrect: boolean) => {
-    const currentQ = questions[currentIndex];
-    
-    // Create a simplified log entry
-    // We assume the first tag is the primary "diagnosis tag" for MVP
-    const diagnosisTag = currentQ.tags && currentQ.tags.length > 0 ? currentQ.tags[0] : "综合";
+    if (!currentQuestion) return;
+
+    const diagnosisTag = currentQuestion.tags && currentQuestion.tags.length > 0 ? currentQuestion.tags[0] : "综合";
 
     const newLog: StepLog = {
-        stepIndex: 0,
-        questionId: currentQ.id,
-        action: isCorrect ? "CORRECT" : "WRONG",
-        isCorrect,
-        timestamp: Date.now(),
-        diagnosisTag: !isCorrect ? diagnosisTag : undefined
+      stepIndex: 0,
+      questionId: currentQuestion.id,
+      action: isCorrect ? "CORRECT" : "WRONG",
+      isCorrect,
+      timestamp: Date.now(),
+      diagnosisTag: !isCorrect ? diagnosisTag : undefined
     };
 
     const newLogs = [...allLogs, newLog];
     setAllLogs(newLogs);
 
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+    // Check if we need more questions
+    if (newLogs.length < 3) {
+      await loadNextQuestion(newLogs);
     } else {
       // Finished all questions
       await submitDiagnosis(newLogs);
@@ -62,76 +69,88 @@ function DiagnoseContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ logs, grade })
       });
-      
+
       if (!res.ok) throw new Error("Diagnosis failed");
-      
+
       const data = await res.json();
       if (data.sessionId) {
-          router.push(`/report/${data.sessionId}`);
+        router.push(`/report/${data.sessionId}`);
       } else {
-          console.error("No session ID returned");
+        console.error("No session ID returned");
       }
 
     } catch (e) {
       console.error(e);
-      alert("诊断提交失败，请重试");
+      alert("提交失败，请重试");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (questions.length === 0) {
+  if (isLoading && !currentQuestion) {
     return (
-        <div className="h-screen flex items-center justify-center text-slate-500">
-            加载诊断题目中... (Grade {grade})
+      <div className="h-screen flex items-center justify-center text-slate-500 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4 mx-auto" />
+          <p>AI 正在为你选题...</p>
         </div>
+      </div>
     );
   }
 
   if (isSubmitting) {
-      return (
-          <div className="h-screen flex flex-col items-center justify-center bg-[#F0F4F8]">
-              <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-              <p className="text-slate-600 font-medium">正在生成诊断报告...</p>
-          </div>
-      )
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+        <p className="text-slate-600 font-medium">AI 正在找提分秘密...</p>
+      </div>
+    )
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="h-screen flex items-center justify-center text-slate-500">
+        无可用题目
+      </div>
+    );
   }
 
   return (
-    <div className="h-screen bg-[#F0F4F8] flex flex-col font-sans text-slate-800 relative overflow-hidden">
-        {/* Progress Bar */}
-        <div className="bg-white px-6 py-4 border-b border-slate-200 flex justify-between items-center z-10 sticky top-0 shadow-sm">
-            <div className="flex items-center gap-2">
-                <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full">
-                    <ArrowLeft size={20} className="text-slate-600"/>
-                </button>
-                <div className="text-lg font-bold text-slate-700">几何体检 (Grade {grade})</div>
-            </div>
-            <div className="flex gap-2">
-                {questions.map((_, idx) => (
-                    <div 
-                        key={idx} 
-                        className={`w-3 h-3 rounded-full ${idx <= currentIndex ? 'bg-blue-600' : 'bg-slate-200'}`}
-                    />
-                ))}
-            </div>
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 flex flex-col font-sans text-slate-800 relative overflow-hidden">
+      {/* Progress Bar */}
+      <div className="bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-200 flex justify-between items-center z-10 sticky top-0 shadow-sm">
+        <div className="flex items-center gap-2">
+          <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full">
+            <ArrowLeft size={20} className="text-slate-600" />
+          </button>
+          <div className="text-lg font-bold text-slate-700">几何体检</div>
         </div>
-
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-3xl mx-auto w-full">
-            <SimpleQuestion 
-                key={currentIndex}
-                question={questions[currentIndex]}
-                onFinish={handleQuestionFinish}
+        <div className="flex gap-2">
+          {[0, 1, 2].map((idx) => (
+            <div
+              key={idx}
+              className={`w-3 h-3 rounded-full transition-all ${idx < allLogs.length ? 'bg-blue-600 scale-110' : 'bg-slate-200'}`}
             />
-        </main>
+          ))}
+        </div>
+      </div>
+
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-3xl mx-auto w-full">
+        <SimpleQuestion
+          key={currentQuestion.id}
+          question={currentQuestion}
+          onFinish={handleQuestionFinish}
+        />
+      </main>
     </div>
   );
 }
 
 export default function DiagnosePage() {
-    return (
-        <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin"/></div>}>
-            <DiagnoseContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>}>
+      <DiagnoseContent />
+    </Suspense>
+  )
 }
+

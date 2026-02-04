@@ -22,6 +22,8 @@ export interface Attempt {
 
 export interface IQuestionProvider {
   getQuestions(params: { grade: number; tags?: string[]; n?: number }): Promise<Question[]>;
+  getNextQuestion(params: { grade: number; previousLogs: any[] }): Promise<Question | null>;
   submitAttempt(attempt: Omit<Attempt, 'timestamp'>): Promise<void>;
   getAttempts(params: { userId: string; stage?: string }): Promise<Attempt[]>;
 }
+

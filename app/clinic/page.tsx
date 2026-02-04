@@ -24,12 +24,12 @@ function ClinicContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const grade = searchParams.get('grade') || '7';
-    
+
     const [step, setStep] = useState<'upload' | 'analyze' | 'confirm'>('upload');
     const [uploads, setUploads] = useState<UploadItem[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isAgreed, setIsAgreed] = useState(false);
-    
+
     const createNewItem = (file: File, previewUrl: string): UploadItem => ({
         id: Math.random().toString(36).substr(2, 9),
         file,
@@ -128,21 +128,21 @@ function ClinicContent() {
 
     return (
         <div className="min-h-screen bg-[#F0F4F8] p-4 flex flex-col max-w-md mx-auto relative pb-24">
-             {/* Header */}
-             <div className="flex items-center justify-between mb-6 sticky top-0 bg-[#F0F4F8] z-10 py-2">
-                 <div className="flex items-center gap-4">
-                     <button onClick={() => router.back()} className="p-2 bg-white rounded-full shadow-sm">
-                         <ArrowRight className="rotate-180" size={20} />
-                     </button>
-                     <div>
-                         <h1 className="text-xl font-bold text-slate-800">{grade}年级错题诊断</h1>
-                         <p className="text-xs text-slate-500">建议上传常错5题，精准定位病灶</p>
-                     </div>
-                 </div>
-                 <button className="p-2 bg-white rounded-full shadow-sm">
-                     <Menu size={20} className="text-slate-700" />
-                 </button>
-             </div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-[#F0F4F8] z-10 py-2">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => router.back()} className="p-2 bg-white rounded-full shadow-sm">
+                        <ArrowRight className="rotate-180" size={20} />
+                    </button>
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-800">{grade}年级错题诊断</h1>
+                        <p className="text-xs text-slate-500">建议上传常错5题，AI 找提分机会</p>
+                    </div>
+                </div>
+                <button className="p-2 bg-white rounded-full shadow-sm">
+                    <Menu size={20} className="text-slate-700" />
+                </button>
+            </div>
 
             <div className="flex-1 space-y-6">
                 {/* Step 1: Upload List */}
@@ -166,25 +166,25 @@ function ClinicContent() {
                                     <div className="flex gap-4 mb-4">
                                         <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200 relative group">
                                             <img src={item.previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                            <button 
+                                            <button
                                                 onClick={() => removeItem(item.id)}
                                                 className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
                                                 <Trash2 size={12} />
                                             </button>
                                         </div>
-                                        
+
                                         <div className="flex-1 space-y-3">
                                             <div className="flex gap-2">
-                                                <input 
-                                                    type="text" 
+                                                <input
+                                                    type="text"
                                                     placeholder="题号/位置 (必填)"
                                                     value={item.questionNo}
                                                     onChange={(e) => updateItem(item.id, 'questionNo', e.target.value)}
                                                     className="w-full p-2 bg-slate-50 rounded-lg text-sm border border-slate-200 focus:border-blue-500 outline-none"
                                                 />
                                             </div>
-                                            <select 
+                                            <select
                                                 value={item.stuckPoint}
                                                 onChange={(e) => updateItem(item.id, 'stuckPoint', e.target.value)}
                                                 className={`w-full p-2 rounded-lg text-sm border outline-none appearance-none ${!item.stuckPoint ? 'text-slate-400 border-red-200 bg-red-50' : 'text-slate-800 border-slate-200 bg-slate-50'}`}
@@ -203,7 +203,7 @@ function ClinicContent() {
                                                 { id: 'ONLINE', label: 'B. 在此补写' },
                                                 { id: 'SIMPLE', label: 'C. 仅标卡点' }
                                             ].map(mode => (
-                                                <button 
+                                                <button
                                                     key={mode.id}
                                                     onClick={() => updateItem(item.id, 'thinkingMode', mode.id)}
                                                     className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors border ${item.thinkingMode === mode.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}
@@ -214,7 +214,7 @@ function ClinicContent() {
                                         </div>
 
                                         {item.thinkingMode === 'ONLINE' && (
-                                            <textarea 
+                                            <textarea
                                                 placeholder="请按模板补写：1.已知... 2.求证... 3.卡在..."
                                                 value={item.thinkingContent}
                                                 onChange={(e) => updateItem(item.id, 'thinkingContent', e.target.value)}
@@ -222,7 +222,7 @@ function ClinicContent() {
                                             />
                                         )}
                                         {item.thinkingMode === 'SIMPLE' && (
-                                            <input 
+                                            <input
                                                 type="text"
                                                 placeholder="具体卡在哪一步？(选填)"
                                                 value={item.thinkingContent}
@@ -235,8 +235,8 @@ function ClinicContent() {
                                     {/* Checkup Toggle */}
                                     <div className="mt-3 flex items-center justify-between">
                                         <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 checked={item.isCheckup}
                                                 onChange={() => handleCheckupToggle(item.id, item.isCheckup)}
                                                 className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
@@ -254,10 +254,10 @@ function ClinicContent() {
                             <div className="max-w-md mx-auto space-y-3">
                                 {/* Compliance Checkbox */}
                                 <div className="flex items-start gap-2 px-1">
-                                    <input 
-                                        type="checkbox" 
-                                        id="agreement" 
-                                        checked={isAgreed} 
+                                    <input
+                                        type="checkbox"
+                                        id="agreement"
+                                        checked={isAgreed}
                                         onChange={(e) => setIsAgreed(e.target.checked)}
                                         className="mt-1 w-3 h-3 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                                     />
@@ -266,7 +266,7 @@ function ClinicContent() {
                                     </label>
                                 </div>
 
-                                <button 
+                                <button
                                     onClick={handleAnalyze}
                                     disabled={uploads.length === 0 || !isAgreed}
                                     className={`w-full py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 text-white transition-all
@@ -283,23 +283,23 @@ function ClinicContent() {
                 {/* Step 2: Analyzing */}
                 {step === 'analyze' && (
                     <div className="bg-white rounded-3xl p-8 shadow-sm text-center space-y-6 flex flex-col items-center justify-center min-h-[400px]">
-                         <div className="relative">
+                        <div className="relative">
                             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                             <div className="absolute inset-0 flex items-center justify-center font-bold text-blue-600 text-xs">AI</div>
-                         </div>
-                         <div className="space-y-2">
+                        </div>
+                        <div className="space-y-2">
                             <p className="font-bold text-slate-800 text-lg animate-pulse">
                                 DeepSeek 正在会诊...
                             </p>
                             <p className="text-slate-500 text-sm">
-                                已受理 {uploads.length} 道错题<br/>
-                                正在分析高频病灶...
+                                已受理 {uploads.length} 道错题<br />
+                                正在分析卡点规律...
                             </p>
-                         </div>
+                        </div>
                     </div>
                 )}
             </div>
-            
+
             {step === 'upload' && <CoachChat grade={parseInt(grade)} />}
         </div>
     );

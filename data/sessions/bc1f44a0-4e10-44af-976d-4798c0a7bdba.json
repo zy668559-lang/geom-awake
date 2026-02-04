@@ -1,0 +1,41 @@
+{
+  "id": "bc1f44a0-4e10-44af-976d-4798c0a7bdba",
+  "timestamp": "2026-01-30T15:56:44.813Z",
+  "grade": 7,
+  "uploads": [
+    {
+      "questionNo": "第10题",
+      "stuckPoint": "条件看不出",
+      "thinkingMode": "SIMPLE",
+      "thinkingContent": "",
+      "isCheckup": false
+    },
+    {
+      "questionNo": "第5题",
+      "stuckPoint": "条件看不出",
+      "thinkingMode": "SIMPLE",
+      "thinkingContent": "",
+      "isCheckup": false
+    },
+    {
+      "questionNo": "第8题",
+      "stuckPoint": "辅助线不会画",
+      "thinkingMode": "SIMPLE",
+      "thinkingContent": "",
+      "isCheckup": false
+    }
+  ],
+  "report": {
+    "coreIssueTag": "模型选不出",
+    "kidTalk": "我发现你其实已经看到了中点，但是手里的笔却迟迟不敢连线。是不是怕连错了？记住，几何里‘见中点’就是冲锋号，大胆连起来！",
+    "commandLine": "见中点，连中点",
+    "fixPlan": [
+      "在图中用红笔圈出所有的中点",
+      "连接中点与顶点（或另一个中点）",
+      "观察新出现的三角形是否全等"
+    ],
+    "nextTraining": "M1_MIDPOINT",
+    "parentSummary": "孩子对几何图形的直觉很好，但在‘构造辅助线’这一步缺乏自信。这通常是因为见过的标准模型不够多。我们这次专项训练会重点帮他建立‘中点模型’的肌肉记忆。",
+    "repairPackId": "RP_MIDPOINT_DOUBLE"
+  }
+}

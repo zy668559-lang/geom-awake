@@ -35,7 +35,7 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [imgError, setImgError] = useState(false);
-    
+
     const [currentStep, setCurrentStep] = useState(0);
     const [showCheck, setShowCheck] = useState(false);
     const [checkSelected, setCheckSelected] = useState<string | null>(null);
@@ -110,7 +110,7 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
 
     return (
         <div className="space-y-6">
-            
+
             {/* 1) Goal Header */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl">
                 <h3 className="text-blue-900 font-bold text-lg mb-1">{data.title}</h3>
@@ -119,16 +119,16 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
 
             {/* 2) Player / Self Check Area */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-[300px]">
-                
+
                 {!showCheck ? (
                     // Player Mode
                     <div className="flex flex-col h-full">
                         {/* SVG Display */}
                         <div className="flex-1 bg-slate-50 flex items-center justify-center p-4 relative min-h-[250px]">
-                            {!imgError && svgContent ? (
-                                <div 
+                            {!imgError && step.svg ? (
+                                <div
                                     className="interactive-svg-wrapper w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300"
-                                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                                    dangerouslySetInnerHTML={{ __html: step.svg }}
                                 />
                             ) : (
                                 <div className="flex flex-col items-center justify-center text-slate-400 space-y-2">
@@ -139,12 +139,12 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
                                     <p className="text-xs">{step.caption}</p>
                                 </div>
                             )}
-                            
+
                             {/* Progress Dots */}
                             <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20 pointer-events-auto">
                                 {data.steps.map((_, idx) => (
-                                    <button 
-                                        key={idx} 
+                                    <button
+                                        key={idx}
                                         onClick={() => setCurrentStep(idx)}
                                         className={`h-2 rounded-full transition-all duration-300 ${idx === currentStep ? 'bg-blue-600 w-6' : 'bg-slate-300 w-2 hover:bg-slate-400'}`}
                                         aria-label={`Go to step ${idx + 1}`}
@@ -155,10 +155,10 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
 
                         {/* Mantra Strip (3) */}
                         <div className="p-6 text-center space-y-2 bg-white border-t border-slate-100">
-                             <h2 className="text-2xl font-black text-slate-800 tracking-wider">
+                            <h2 className="text-2xl font-black text-slate-800 tracking-wider">
                                 “{step.caption}”
-                             </h2>
-                             <p className="text-slate-500 text-sm">{step.tip}</p>
+                            </h2>
+                            <p className="text-slate-500 text-sm">{step.tip}</p>
                         </div>
                     </div>
                 ) : (
@@ -177,7 +177,7 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
                                     onClick={() => handleCheckSubmit(opt)}
                                     disabled={checkResult === 'correct'}
                                     className={`w-full py-4 px-6 rounded-xl font-bold text-left transition-all border-2
-                                        ${checkSelected === opt 
+                                        ${checkSelected === opt
                                             ? (checkResult === 'correct' ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700')
                                             : 'bg-white border-slate-100 hover:border-blue-200 text-slate-600'
                                         }
@@ -202,27 +202,27 @@ const ModelPlayer: React.FC<ModelPlayerProps> = ({ modelId, onFinish }) => {
                 {/* Navigation Controls (Only for Player Mode) */}
                 {!showCheck && (
                     <div className="absolute bottom-6 right-6 flex gap-2">
-                        <button 
+                        <button
                             onClick={handlePrev}
                             disabled={currentStep === 0}
                             className="p-2 rounded-full bg-white/80 backdrop-blur text-slate-600 hover:bg-white disabled:opacity-30 shadow-sm border border-slate-200"
                         >
                             <ArrowLeft size={20} />
                         </button>
-                        <button 
+                        <button
                             onClick={handleNext}
                             className="px-4 py-2 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg flex items-center gap-1"
                         >
-                            {isLastStep ? (data.check ? '去自检' : '完成') : '下一步'} 
+                            {isLastStep ? (data.check ? '去自检' : '完成') : '下一步'}
                             <ArrowRight size={16} />
                         </button>
                     </div>
                 )}
 
-                 {/* Back button for Check Mode */}
-                 {showCheck && checkResult !== 'correct' && (
+                {/* Back button for Check Mode */}
+                {showCheck && checkResult !== 'correct' && (
                     <div className="absolute top-6 left-6">
-                        <button 
+                        <button
                             onClick={handlePrev}
                             className="flex items-center gap-1 text-slate-400 hover:text-slate-600 text-sm font-bold"
                         >

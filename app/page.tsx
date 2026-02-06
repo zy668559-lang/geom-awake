@@ -1,59 +1,60 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Camera } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
 
-  const handlePhotoScan = () => {
-    // Default to grade 8 for simplified flow
-    router.push(`/clinic?grade=8`);
+  const handleStart = () => {
+    // Phase 2: 跳转至处理页模拟上传分析流
+    router.push("/processing");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 flex flex-col items-center justify-center p-8 font-sans">
-      
-      {/* Logo & Title */}
-      <div className="text-center mb-16 animate-fade-in">
-        <h1 className="text-5xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
-          几何觉醒
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
+      {/* 极简标题区 */}
+      <div className="text-center mb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-2xl">
+        <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-[#667EEA] to-[#764BA2] bg-clip-text text-transparent tracking-tight leading-tight">
+          几何思维 AI 体检中心
         </h1>
-        <p className="text-slate-500 text-sm font-medium tracking-wide">
-          AI 找提分秘密
+        <p className="text-slate-500 text-xl font-medium tracking-wide leading-relaxed">
+          陈老师 AI 体检：少走冤枉路，帮孩子找准那个一拨就开窍的提分点。
         </p>
       </div>
 
-      {/* Main CTA Button */}
+      {/* 核心交互区 - 呼吸感大按钮 */}
       <button
-        onClick={handlePhotoScan}
-        className="group relative w-[340px] h-[340px] bg-white rounded-[56px] shadow-2xl shadow-blue-200/60 
-                   flex flex-col items-center justify-center gap-6 
-                   hover:scale-[1.02] active:scale-[0.98] 
-                   transition-all duration-300 ease-out
-                   animate-breathing"
+        onClick={handleStart}
+        className="group relative w-full max-w-sm aspect-square bg-white rounded-[48px] shadow-[0_20px_60px_-12px_rgba(102,126,234,0.15)]
+                   border border-slate-100/50
+                   flex flex-col items-center justify-center gap-8
+                   animate-hover-lift animate-breathing"
       >
-        {/* Icon */}
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 
-                        flex items-center justify-center shadow-lg shadow-blue-300/50
-                        group-hover:shadow-xl group-hover:shadow-blue-400/60 transition-all">
-          <Sparkles size={48} className="text-white" strokeWidth={2.5} />
-        </div>
-        
-        {/* Text */}
-        <div className="text-center">
-          <div className="text-3xl font-bold text-slate-800 mb-2">拍照诊断</div>
-          <div className="text-sm text-slate-400 font-medium">上传错题，3分钟找到提分关键</div>
+        {/* 图标容器 */}
+        <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-[#667EEA] to-[#764BA2] 
+                        flex items-center justify-center shadow-lg shadow-blue-500/30
+                        group-hover:scale-110 transition-transform duration-500">
+          <Camera size={56} className="text-white" strokeWidth={2} />
         </div>
 
-        {/* Subtle Pulse Ring */}
-        <div className="absolute inset-0 rounded-[56px] border-4 border-blue-400/30 animate-pulse-ring"></div>
+        {/* 文字指引 */}
+        <div className="text-center px-6 space-y-3">
+          <span className="block text-xl font-bold text-slate-800 leading-snug">
+            立即上传几何题<br />开启开窍之旅
+          </span>
+        </div>
+
+        {/* 装饰性光晕 */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white via-white/0 to-transparent rounded-b-[48px] pointer-events-none opacity-50" />
       </button>
 
-      {/* Bottom Hint */}
-      <p className="mt-16 text-center text-sm text-slate-400 max-w-xs leading-relaxed">
-        不是搜题给答案<br/>是把"画线和找关系"练出来
-      </p>
+      {/* 底部极简 Slogan */}
+      <div className="fixed bottom-12 text-center">
+        <p className="text-xs text-slate-300 font-light tracking-widest uppercase opacity-60">
+          Designed by Antigravity
+        </p>
+      </div>
     </div>
   );
 }

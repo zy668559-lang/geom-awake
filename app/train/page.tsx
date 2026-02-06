@@ -21,7 +21,6 @@ function TrainContent() {
     const modelId = searchParams.get("model") || "g7_condition_marking";
     const packIdParam = searchParams.get("packId");
     const userId = "user_001"; // Mock user
-    const grade = 8; // Mock grade
 
     // Data State
     const [pack, setPack] = useState<RepairPack | null>(null);
@@ -79,12 +78,12 @@ function TrainContent() {
                 const topWeakTag = modelId;
 
                 const [ex, mi, va, de, r1, r2] = await Promise.all([
-                    mockProvider.getQuestions({ grade, tags: [topWeakTag], n: 5 }),
-                    mockProvider.getQuestions({ grade, tags: ["基础动作"], n: 5 }),
-                    mockProvider.getQuestions({ grade, tags: [topWeakTag], n: 5 }),
-                    mockProvider.getQuestions({ grade, tags: ["两步题"], n: 2 }),
-                    mockProvider.getQuestions({ grade, tags: [topWeakTag], n: 3 }),
-                    mockProvider.getQuestions({ grade, tags: [topWeakTag], n: 3 }),
+                    mockProvider.getQuestions({ tags: [topWeakTag], n: 5 }),
+                    mockProvider.getQuestions({ tags: ["基础动作"], n: 5 }),
+                    mockProvider.getQuestions({ tags: [topWeakTag], n: 5 }),
+                    mockProvider.getQuestions({ tags: ["两步题"], n: 2 }),
+                    mockProvider.getQuestions({ tags: [topWeakTag], n: 3 }),
+                    mockProvider.getQuestions({ tags: [topWeakTag], n: 3 }),
                 ]);
 
                 setQuestions({
@@ -366,7 +365,6 @@ function TrainContent() {
             {currentStep !== 'COMPLETE' && pack && (
                 <div className="fixed bottom-6 right-6 z-50">
                     <CoachChat
-                        grade={grade}
                         diagnosisTags={[pack.tagCombination.topic, pack.tagCombination.signal]}
                         currentStep={currentStep}
                         modelId={modelId}

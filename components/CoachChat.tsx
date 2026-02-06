@@ -5,13 +5,12 @@ import { MessageCircle, X, Send, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ChatProps {
-    grade?: number;
     diagnosisTags?: string[];
     currentStep?: string;
     modelId?: string;
 }
 
-export default function CoachChat({ grade = 7, diagnosisTags = [], currentStep = "", modelId = "condition-mapping" }: ChatProps) {
+export default function CoachChat({ diagnosisTags = [], currentStep = "", modelId = "condition-mapping" }: ChatProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [modelContext, setModelContext] = useState<any>(null);
 
@@ -25,7 +24,7 @@ export default function CoachChat({ grade = 7, diagnosisTags = [], currentStep =
         }
     }, [modelId]);
 
-    const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([
+    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
         { role: 'assistant', content: '你好！我是你的几何教练。做题卡住了吗？告诉我哪里想不通。' }
     ]);
     const [input, setInput] = useState("");
@@ -53,7 +52,6 @@ export default function CoachChat({ grade = 7, diagnosisTags = [], currentStep =
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    grade,
                     diagnosisTags,
                     userSelfReport: userMsg,
                     currentStep,
@@ -65,9 +63,9 @@ export default function CoachChat({ grade = 7, diagnosisTags = [], currentStep =
                     } : null
                 })
             });
-            
+
             if (!res.ok) throw new Error('Failed');
-            
+
             const data = await res.json();
             setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
         } catch (e) {
@@ -113,11 +111,10 @@ export default function CoachChat({ grade = 7, diagnosisTags = [], currentStep =
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
                             {messages.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                                        msg.role === 'user' 
-                                            ? 'bg-blue-600 text-white rounded-br-none' 
+                                    <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.role === 'user'
+                                            ? 'bg-blue-600 text-white rounded-br-none'
                                             : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none shadow-sm'
-                                    }`}>
+                                        }`}>
                                         {msg.content}
                                     </div>
                                 </div>
@@ -141,7 +138,7 @@ export default function CoachChat({ grade = 7, diagnosisTags = [], currentStep =
                                 placeholder="输入你的困惑..."
                                 className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                             />
-                            <button 
+                            <button
                                 onClick={handleSend}
                                 disabled={isLoading || !input.trim()}
                                 className="p-2 bg-blue-600 text-white rounded-xl disabled:opacity-50 hover:bg-blue-700"

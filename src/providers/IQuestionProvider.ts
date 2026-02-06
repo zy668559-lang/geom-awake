@@ -1,13 +1,14 @@
 export interface Question {
   id: string;
-  grade: number;
+  model: string;
+  type: 'CHECKUP' | 'TRAIN' | 'RETEST';
   tags: string[];
   title: string;
   stem: string;
   figure?: string;
   question: string;
   answer?: string;
-  solution_outline: string;
+  solution_outline?: string;
 }
 
 export interface Attempt {
@@ -21,9 +22,8 @@ export interface Attempt {
 }
 
 export interface IQuestionProvider {
-  getQuestions(params: { grade: number; tags?: string[]; n?: number }): Promise<Question[]>;
-  getNextQuestion(params: { grade: number; previousLogs: any[] }): Promise<Question | null>;
+  getQuestions(params: { tags?: string[]; n?: number }): Promise<Question[]>;
+  getNextQuestion(params: { previousLogs: any[] }): Promise<Question | null>;
   submitAttempt(attempt: Omit<Attempt, 'timestamp'>): Promise<void>;
   getAttempts(params: { userId: string; stage?: string }): Promise<Attempt[]>;
 }
-

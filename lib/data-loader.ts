@@ -7,9 +7,8 @@ import { Question, RepairPack } from './types';
 const questions = questionsData as unknown as Question[];
 const repairPacks = repairPacksData as unknown as RepairPack[];
 
-export const getQuestions = (grade: number, type: 'CHECKUP' | 'TRAIN' | 'RETEST'): Question[] => {
-  // Convert grade to number if it comes as string
-  return questions.filter(q => q.grade === Number(grade) && q.type === type);
+export const getQuestions = (type: 'CHECKUP' | 'TRAIN' | 'RETEST'): Question[] => {
+    return questions.filter(q => q.type === type);
 };
 
 export const getQuestionsByModel = (model: string, type: 'CHECKUP' | 'TRAIN' | 'RETEST'): Question[] => {

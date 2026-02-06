@@ -1,58 +1,76 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Camera } from "lucide-react";
+import { Camera } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleStart = () => {
-    // Phase 2: 跳转至处理页模拟上传分析流
-    router.push("/processing");
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        localStorage.setItem("pending_geometry_image", reader.result as string);
+        router.push("/processing");
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
       {/* 极简标题区 */}
       <div className="text-center mb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-2xl">
-        <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-[#667EEA] to-[#764BA2] bg-clip-text text-transparent tracking-tight leading-tight">
+        <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
           几何思维 AI 体检中心
         </h1>
         <p className="text-slate-500 text-xl font-medium tracking-wide leading-relaxed">
-          陈老师 AI 体检：少走冤枉路，帮孩子找准那个一拨就开窍的提分点。
+          陈老师 AI 体检：少走冤枉路
         </p>
       </div>
 
-      {/* 核心交互区 - 呼吸感大按钮 */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+      />
+
+      {/* 核心交互区 - 极简大圆角按钮 */}
       <button
         onClick={handleStart}
-        className="group relative w-full max-w-sm aspect-square bg-white rounded-[48px] shadow-[0_20px_60px_-12px_rgba(102,126,234,0.15)]
+        className="group relative px-12 py-10 bg-white rounded-[64px] shadow-[0_30px_80px_-15px_rgba(0,0,0,0.1)]
                    border border-slate-100/50
                    flex flex-col items-center justify-center gap-8
-                   animate-hover-lift animate-breathing"
+                   hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
       >
-        {/* 图标容器 */}
-        <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-[#667EEA] to-[#764BA2] 
-                        flex items-center justify-center shadow-lg shadow-blue-500/30
-                        group-hover:scale-110 transition-transform duration-500">
+        <div className="w-28 h-28 rounded-[40px] bg-slate-900 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
           <Camera size={56} className="text-white" strokeWidth={2} />
         </div>
 
-        {/* 文字指引 */}
-        <div className="text-center px-6 space-y-3">
-          <span className="block text-xl font-bold text-slate-800 leading-snug">
-            立即上传几何题<br />开启开窍之旅
+        <div className="text-center">
+          <span className="block text-2xl font-black text-slate-800 tracking-tight">
+            拍下难题，开始体检
+          </span>
+          <span className="block text-sm text-slate-400 mt-2 font-medium">
+            AI 辅助寻找解题突破口
           </span>
         </div>
-
-        {/* 装饰性光晕 */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white via-white/0 to-transparent rounded-b-[48px] pointer-events-none opacity-50" />
       </button>
 
-      {/* 底部极简 Slogan */}
+      {/* 底部文案 */}
       <div className="fixed bottom-12 text-center">
         <p className="text-xs text-slate-300 font-light tracking-widest uppercase opacity-60">
-          Designed by Antigravity
+          极简主义 · 陈老师工作室
         </p>
       </div>
     </div>

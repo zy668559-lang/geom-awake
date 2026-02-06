@@ -12,7 +12,6 @@ export interface QuestionStep {
 
 export interface Question {
   id: string;
-  grade: number;
   model: string;
   type: 'CHECKUP' | 'TRAIN' | 'RETEST';
   svg: {
@@ -52,9 +51,9 @@ export interface RepairPack {
     description: string;
     imageUrl?: string; // Static fallback
     steps?: { // For ModelPlayer
-        imageUrl: string; // or svg content
-        description: string;
-        mantraKeyword: string; // Highlighted keyword
+      imageUrl: string; // or svg content
+      description: string;
+      mantraKeyword: string; // Highlighted keyword
     }[];
   };
   example: Question;       // 例题
@@ -66,10 +65,9 @@ export interface RepairPack {
 }
 
 export interface UserPersona {
-    grade: number;
-    weakTags: DiagnosisTagLayers[];
-    recentErrors: string[];
-    completedRepairPacks: string[];
-    retestResults: Record<string, number>; // packId -> score
+  weakTags: DiagnosisTagLayers[];
+  recentErrors: string[];
+  completedRepairPacks: string[];
+  retestResults: Record<string, number>; // packId -> score
 }
 

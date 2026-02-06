@@ -1,67 +1,59 @@
 import { NextResponse } from "next/server";
+import { identifyGeometry } from "@/lib/gemini";
 
 export async function POST(req: Request) {
+  console.log("[Analyze API] POST request received");
   try {
-    // 1. 解析请求 - 支持图片 Base64
     const body = await req.json();
-    const { imageBase64, messages } = body;
-    // messages 可选，如果前端传了对话历史
+    const { imageBase64, stuckPoint, messages } = body;
 
+    if (!imageBase64) {
+      console.warn("[Analyze API] Missing imageBase64");
+      return NextResponse.json({ error: "请上传题目图片" }, { status: 400 });
+    }
+
+    // 2. 眼睛亮起：调用 Gemini 识图
+    console.log("[Eyes] Calling Gemini 2.0 Flash...");
+    const geometryDescription = await identifyGeometry(imageBase64);
+    console.log("[Eyes] Gemini recognition successful.");
+
+    // 3. 注入灵魂：调用 DeepSeek 推理
     const apiKey = process.env.DEEPSEEK_API_KEY;
     const baseURL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
 
-    // 陈老师核心人设 Prompt
+    if (!apiKey) {
+      throw new Error("DEEPSEEK_API_KEY is not configured");
+    }
+
     const systemPrompt = `
-你是陈老师，一位有20年经验的初中几何教练。你的风格是：
+你是陈老师，一位有20年经验教初中几何的教练。你的风格是：
+1. **邻居大姐口吻**：亲切、通俗、接地气。严禁使用"掌握薄弱"、"逻辑断层"等术语。
+2. **灵魂诊断**：你要根据图形描述和孩子觉得难的地方（卡点），找出那个最关键的"隐形陷阱"。
+3. **具体建议**：给出一个具体的、今晚就能做的3天练习计划。
 
-1. **口语化**：用"咱们""你看"这种亲切表达，不用术语堆砌
-2. **找规律**：不是讲题，而是帮学生发现"这类题都卡在哪"
-3. **给方法**：每个建议都配具体的3天练习计划
-4. **鼓励型**：强调"不是笨，是缺练习"
+**必须使用的语气示例**：
+- "这道题有个隐形陷阱，孩子没瞧见。"
+- "这题就像走路绕了远路，其实有个近道孩子还没发现。"
+- "咱们不急，先找那个躲起来的中点。"
 
-请仔细分析用户上传的几何错题图片，如果是文字描述则分析描述。
+**输入信息**：
+- 题目描述：${geometryDescription}
+- 孩子觉得难在哪：${stuckPoint || "未提供"}
 
-返回 JSON 格式（严禁返回 Markdown 代码块，只返回纯 JSON 字符串）：
+请返回 JSON 格式（严禁返回 Markdown 代码块，只返回纯 JSON 字符串）：
 {
-  "stuckPoint": "一句话诊断卡点（例如：看不出隐藏的平行线）",
-  "rootCause": "本质原因（例如：平行线判定5个定理没形成条件反射）",
-  "coachAdvice": "陈老师的口语化建议（咱们这样，今晚睡前...）",
+  "stuckPoint": "陈老师发现的真正卡点（一句话，口语化）",
+  "rootCause": "为什么孩子会卡在这（邻居大姐口吻，例如：孩子眼里没看到那条中位线）",
+  "coachAdvice": "陈老师的口语化建议（咱们这样，今晚...）",
   "threeDayPlan": [
-    { "day": 1, "task": "具体练习内容" },
-    { "day": 2, "task": "具体练习内容" },
-    { "day": 3, "task": "具体练习内容" }
+    { "day": 1, "task": "具体内容" },
+    { "day": 2, "task": "具体内容" },
+    { "day": 3, "task": "具体内容" }
   ]
 }
     `;
 
-    // 2. 构造 DeepSeek 请求的消息体
-    const deepseekMessages = [
-      { role: "system", content: systemPrompt },
-      ...(messages || []) // 追加历史
-    ];
-
-    // 如果有图片，按照 Vision 模型格式构造 (假设 DeepSeek 支持 Vision 或由前端 OCR 后传入)
-    // 注意：当前 DeepSeek V3/R1 主要为文本模型，若需图片理解可能需要多模态或者前端先转描述。
-    // *根据当前 MVP 设定，我们假设前端可能传 OCR 文本或 Prompt 引导*
-    // *修正：RECONSTRUCTION_PLAN 提到 "图片上传后直接调用 DeepSeek API"*
-    // *如果 DeepSeek 暂不支持直接图片 URL，这里做 Mock 兼容或提示前端*
-
-    // 临时 Mock 逻辑：如果没有 Key，返回模拟数据
-    if (!apiKey) {
-      console.log("No API Key, returning mock 'Chen Teacher' response");
-      return NextResponse.json(JSON.stringify({
-        stuckPoint: "辅助线画多了，眼花缭乱",
-        rootCause: "没有先找核心图形，直接凭感觉连线",
-        coachAdvice: "哎呀，这题你看，是不是把简单图想复杂了？咱们别见点就连线。",
-        threeDayPlan: [
-          { day: 1, task: "只看题干画草图，不看原图" },
-          { day: 2, task: "练习『手绘标准圆』10次" },
-          { day: 3, task: "重做这道题，限制只能画1条辅助线" }
-        ]
-      }));
-    }
-
-    // 真实调用
+    console.log("[Brain] DeepSeek reasoning started...");
     const resp = await fetch(`${baseURL}/chat/completions`, {
       method: "POST",
       headers: {
@@ -69,16 +61,20 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "deepseek-chat", // 或 deepseek-v3
-        messages: deepseekMessages,
+        model: process.env.DEEPSEEK_MODEL || "deepseek-chat",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...(messages || [])
+        ],
         temperature: 0.7,
         max_tokens: 2000,
-        response_format: { type: "json_object" } // 强制 JSON
+        response_format: { type: "json_object" }
       }),
     });
 
     if (!resp.ok) {
       const errText = await resp.text();
+      console.error("[Brain] DeepSeek Error Resp:", errText);
       throw new Error(`DeepSeek API Error: ${errText}`);
     }
 
@@ -88,10 +84,11 @@ export async function POST(req: Request) {
     // 清洗可能存在的 Markdown 标记
     content = content.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    return NextResponse.json(content);
+    console.log("[Complete] Diagnosis generated and sent.");
+    return NextResponse.json(JSON.parse(content));
 
   } catch (error: unknown) {
-    console.error("Analyze Error:", error);
+    console.error("[Analyze API] ERROR:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       { error: "分析失败", details: errorMessage },

@@ -1,47 +1,124 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import sharp from 'sharp';
+
+/**
+ * 429/Concurrency Solution: Backend Request Queue
+ * Ensures only one Gemini request is processed at a time.
+ */
+class GeminiQueue {
+    private queue: (() => Promise<void>)[] = [];
+    private processing = false;
+
+    async add<T>(task: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.queue.push(async () => {
+                try {
+                    const result = await task();
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+            this.process();
+        });
+    }
+
+    private async process() {
+        if (this.processing || this.queue.length === 0) return;
+        this.processing = true;
+        while (this.queue.length > 0) {
+            const task = this.queue.shift();
+            if (task) await task();
+        }
+        this.processing = false;
+    }
+}
+
+const geminiQueue = new GeminiQueue();
+
+/**
+ * Image Optimization: Resize and compress
+ */
+async function optimizeImage(base64: string): Promise<string> {
+    const buffer = Buffer.from(base64.split(',')[1] || base64, 'base64');
+    const optimized = await sharp(buffer)
+        .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+    return optimized.toString('base64');
+}
 
 export async function identifyGeometry(imageBase64: string): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
-        console.error(">>> [Gemini Service] GEMINI_API_KEY is missing in process.env");
-        throw new Error("Gemini API Key 未配置");
+        console.error("❌ [Gemini] GEMINI_API_KEY IS MISSING!");
+        throw new Error("CRITICAL: GEMINI_API_KEY 未找到");
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // Optimization & Token Control
+    const MAX_RETRIES = 5; // 可控重试
+    const MAX_OUTPUT_TOKENS = 1000; // 降成本
 
-    const prompt = `
-你是一位专业的初中几何识图助手。请仔细观察这张几何题目图片，完成以下任务：
+    return geminiQueue.add(async () => {
+        let lastError: any = null;
 
-1. **图形识别**：描述图中主要的几何图形（如三角形、圆、平行四边形等）。
-2. **符号与标注**：列出图中出现的字母标注（点 A, B, C 等）以及几何符号（垂直、平行、中点、角相等、边相等等）。
-3. **文本OCR**：识别图片中的所有文字题目信息。
-4. **综合描述**：将以上信息整合成一段清晰的结构化文字，描述图形的构成和已知条件。
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                const optimizedData = await optimizeImage(imageBase64);
 
-**注意**：你只需要客观描述看到的图形和文字，**严禁**进行数学证明或给出解题步骤。你的输出将作为另一个逻辑模型的输入。
-  `;
+                console.log(`--- [Gemini] Attempt ${attempt + 1} (Payload optimized) ---`);
 
-    try {
-        const base64Data = imageBase64.split(",")[1] || imageBase64;
-        console.log(`>>> [Gemini Service] Calling model generateContent. Data length: ${base64Data.length}`);
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: "你是一个专业的几何老师。请客观描述这张几何题目图片的内容、标注、文本和符号。重点记录已知条件和求证/求值目标。" },
+                            { inlineData: { data: optimizedData, mimeType: "image/jpeg" } }
+                        ]
+                    }],
+                    generationConfig: {
+                        maxOutputTokens: MAX_OUTPUT_TOKENS,
+                        temperature: 0.2
+                    }
+                };
 
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: "image/jpeg",
-                },
-            },
-        ]);
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
 
-        const response = await result.response;
-        const text = response.text();
-        console.log(">>> [Gemini Service] Gemini responded successfully");
-        return text;
-    } catch (error: any) {
-        console.error(">>> [Gemini Service] ERROR:", error);
-        const detail = error?.message || String(error);
-        throw new Error(`视觉识别引擎识别失败: ${detail}`);
-    }
+                if (response.ok) {
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    console.log('✅ [Gemini] Success!');
+                    return text;
+                }
+
+                const errData = await response.json().catch(() => ({}));
+                const status = response.status;
+
+                if (status === 429 || status === 500 || status === 503) {
+                    lastError = new Error(`Gemini Error ${status}: ${errData?.error?.message || response.statusText}`);
+                    // Exponential backoff with jitter
+                    const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+                    console.warn(`⚠️ [Gemini] Rate limited or server error (${status}). Retrying in ${Math.round(delay)}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+
+                // Other fatal errors
+                const fatalError: any = new Error(`Gemini Fatal Error: ${errData?.error?.message || response.statusText}`);
+                fatalError.rawData = errData;
+                throw fatalError;
+
+            } catch (error: any) {
+                if (error.rawData) throw error; // Re-throw fatal
+                lastError = error;
+                console.error(`💥 [Gemini] Unexpected attempt error:`, error.message);
+                if (attempt === MAX_RETRIES - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        throw lastError;
+    });
 }

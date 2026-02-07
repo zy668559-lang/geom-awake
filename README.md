@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Geometry Awakening MVP
 
-## Getting Started
+极简几何思维“体检中心” —— 帮助孩子少走冤枉路。
 
-First, run the development server:
+## 项目简介
+本项目通过 Google Gemini Vision 识别几何图形，联合 DeepSeek 进行“陈老师”风格的互动式诊断，为学生提供针对性的成长建议。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 快速启动
+1. **配置环境**:
+   创建 `.env.local` 并填写：
+   ```env
+   GEMINI_API_KEY=xxx
+   DEEPSEEK_API_KEY=xxx
+   MOCK_MODE=false
+   ```
+2. **启动服务**:
+   ```bash
+   npm run dev
+   ```
+   访问: `http://localhost:3000`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 常见故障 (TS)
+- **429 Rate Limit**: 后端已内置请求队列与指数退避，如有发生请稍候。
+- **端口冲突**: 项目固定使用 3000 端口，请确保无其他占位进程。
+- **图片无法识别**: 系统会自动压缩图片，若仍失败请尝试光线充足的近景拍照。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 仓库结构
+- `docs/TODO.md`: 需求与路线图。
+- `docs/ARCH.md`: 系统架构说明。
+- `docs/CHANGELOG.md`: 开发记录。
+- `docs/ACCEPTANCE.md`: 验收标准。

@@ -27,20 +27,22 @@ export default function ProcessingPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [imageBase64, setImageBase64] = useState<string | null>(null);
 
-    // 模拟读取刚才上传的图片 (实际应该从状态或 URL 传过来)
+    const hasInitialized = useRef(false);
+    // 自动流程：读取图片并立即进入交互模式
     useEffect(() => {
-        // 简单模拟：实际开发中建议使用全局状态或 URL 参数
-        const mockImg = localStorage.getItem("pending_geometry_image");
-        if (mockImg) setImageBase64(mockImg);
+        if (hasInitialized.current) return;
+        hasInitialized.current = true;
 
-        // 第一步：自动识图 (Gemini)
-        const timer = setTimeout(() => {
+        const mockImg = localStorage.getItem("pending_geometry_image");
+        if (mockImg) {
+            setImageBase64(mockImg);
             setState("INTERACTING");
-        }, 3000);
-        return () => clearTimeout(timer);
+        }
     }, []);
 
     const handleStartDiagnosis = async (point: string) => {
+        if (isLoading) return; // 防重复提交
+
         const finalPoint = point || stuckPoint;
         setStuckPoint(finalPoint);
         setState("REASONING");
@@ -56,15 +58,24 @@ export default function ProcessingPage() {
                 })
             });
 
-            if (!res.ok) throw new Error("诊断失败");
+            const responseData = await res.json();
 
-            const diagnosisData = await res.json();
+            if (!res.ok) {
+                // 暴力展示所有错误，由用户决定下一步，不再强制等待
+                if (responseData.errData) {
+                    window.alert(`🛑 视觉识图底层报错 (Google API):\n\n${JSON.stringify(responseData.errData, null, 2)}`);
+                } else {
+                    window.alert(`❌ 诊断失败: ${responseData.details || "未知错误"}`);
+                }
+                throw new Error(responseData.details || "诊断失败");
+            }
+
             // 保存结果并跳转
-            localStorage.setItem("latest_diagnosis", diagnosisData);
+            localStorage.setItem("latest_diagnosis", JSON.stringify(responseData));
             router.push("/report");
-        } catch (error) {
-            console.error(error);
-            alert("陈老师刚才走神了，咱们重试一下？");
+        } catch (error: any) {
+            console.error("Diagnosis Error:", error);
+            // 报错后允许立即重试，不再设置 20s 冷却
             setState("INTERACTING");
         } finally {
             setIsLoading(false);
@@ -97,7 +108,8 @@ export default function ProcessingPage() {
                             <button
                                 key={i}
                                 onClick={() => handleStartDiagnosis(opt)}
-                                className="w-full py-4 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-2xl text-left border border-slate-100 transition-all flex justify-between items-center group"
+                                disabled={isLoading}
+                                className={`w-full py-4 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-2xl text-left border border-slate-100 transition-all flex justify-between items-center group ${isLoading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
                             >
                                 {opt}
                                 <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -112,10 +124,10 @@ export default function ProcessingPage() {
                             />
                             <button
                                 onClick={() => handleStartDiagnosis(stuckPoint)}
-                                disabled={!stuckPoint.trim()}
+                                disabled={!stuckPoint.trim() || isLoading}
                                 className="bg-slate-900 text-white px-6 rounded-xl font-bold disabled:opacity-30"
                             >
-                                确定
+                                {isLoading ? "..." : "确定"}
                             </button>
                         </div>
                     </div>

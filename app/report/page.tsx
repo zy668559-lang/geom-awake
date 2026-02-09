@@ -109,13 +109,29 @@ export default function ReportPage() {
                 </div>
 
                 {/* 底部行动 */}
-                <button
-                    className="w-full bg-[#1A1A1A] text-white text-xl font-bold py-6 rounded-[24px] shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                    onClick={() => router.push("/")}
-                >
-                    换一道题再试试
-                    <ArrowRight size={20} />
-                </button>
+                <div className="space-y-4">
+                    <button
+                        className="w-full bg-[#667EEA] text-white text-xl font-bold py-6 rounded-[24px] shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                        onClick={() => {
+                            const isUnlocked = localStorage.getItem("repair_unlocked") === "true";
+                            if (isUnlocked) {
+                                router.push("/repair");
+                            } else {
+                                router.push("/unlock");
+                            }
+                        }}
+                    >
+                        陈老师，带我搞定这门题
+                        <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <button
+                        className="w-full bg-white text-slate-400 text-lg font-bold py-4 rounded-[24px] border-2 border-slate-100 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                        onClick={() => router.push("/")}
+                    >
+                        换一道题再试试
+                    </button>
+                </div>
 
             </main>
         </div>

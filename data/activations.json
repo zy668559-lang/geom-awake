@@ -1,0 +1,17 @@
+[
+    {
+        "code": "MVP2-TEST-001",
+        "validUntil": "2026-12-31T23:59:59Z",
+        "isUsed": false
+    },
+    {
+        "code": "MVP2-FREE-999",
+        "validUntil": "2099-01-01T00:00:00Z",
+        "isUsed": false
+    },
+    {
+        "code": "EXPIRED-CODE",
+        "validUntil": "2024-01-01T00:00:00Z",
+        "isUsed": false
+    }
+]

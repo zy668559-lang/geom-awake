@@ -11,6 +11,37 @@ export default function UploadPage() {
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isActive, setIsActive] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('is_activated') === 'true';
+        }
+        return false;
+    });
+    const [activationCode, setActivationCode] = useState('');
+    const [isActivating, setIsActivating] = useState(false);
+
+    const handleActivate = async () => {
+        if (!activationCode) return;
+        setIsActivating(true);
+        try {
+            const resp = await fetch('/api/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: activationCode })
+            });
+            if (resp.ok) {
+                localStorage.setItem('is_activated', 'true');
+                setIsActive(true);
+            } else {
+                const data = await resp.json();
+                alert(data.error || "激活失败");
+            }
+        } catch (e) {
+            alert("网络错误，请重试");
+        } finally {
+            setIsActivating(false);
+        }
+    };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -26,24 +57,47 @@ export default function UploadPage() {
     };
 
     const handleStartDiagnosis = async () => {
-        if (!previewUrl) return;
+        if (!previewUrl || isAnalyzing) return;
 
         setIsAnalyzing(true);
 
-        // 模拟 API 调用延迟，后续接真实 DeepSeek
-        // 这里暂时直接跳转到模拟报告，或者调用 /api/analyze
         try {
-            // Mock delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // 1. 获取图片 Base64
+            const response = await fetch(previewUrl);
+            const blob = await response.blob();
+            const reader = new FileReader();
 
-            // 假设分析成功，跳转到报告
-            // 这里 ID 暂时写死或随机，后续由 API 返回
-            const mockSessionId = "demo-" + Math.random().toString(36).substr(2, 6);
-            router.push(`/report/${mockSessionId}`);
-        } catch (e) {
-            console.error(e);
+            const base64Promise = new Promise<string>((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+
+            const imageBase64 = await base64Promise;
+
+            // 2. 调用真实 API
+            console.log("🚀 [Frontend] Sending analysis request...");
+            const apiResp = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64 })
+            });
+
+            if (!apiResp.ok) {
+                const errorData = await apiResp.json();
+                throw new Error(errorData.error || "诊断失败");
+            }
+
+            const result = await apiResp.json();
+            console.log("✅ [Frontend] Analysis success:", result);
+
+            // 3. 跳转到报告页 (带上数据或 ID)
+            // 这里我们先跳转，实际项目中可能需要持久化 result 或通过 URL 传参
+            const sessionId = "ses-" + Math.random().toString(36).substr(2, 6);
+            router.push(`/report/${sessionId}?data=${encodeURIComponent(JSON.stringify(result))}`);
+        } catch (e: any) {
+            console.error("❌ [Frontend] Diagnosis error:", e);
+            alert(e.message || "诊断服务开小差了，请重试");
             setIsAnalyzing(false);
-            alert("诊断服务开小差了，请重试");
         }
     };
 
@@ -118,17 +172,45 @@ export default function UploadPage() {
             <div className="mt-8 max-w-lg mx-auto w-full">
                 <button
                     onClick={handleStartDiagnosis}
-                    disabled={!previewUrl || isAnalyzing}
+                    disabled={!previewUrl || isAnalyzing || !isActive}
                     className={`w-full py-4 rounded-[24px] font-bold text-lg shadow-xl flex items-center justify-center gap-2 transition-all
-                        ${!previewUrl
+                        ${(!previewUrl || !isActive)
                             ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                             : 'bg-gradient-to-r from-[#667EEA] to-[#764BA2] text-white hover:scale-[1.02] active:scale-[0.98]'
                         }
                     `}
                 >
-                    {isAnalyzing ? '诊断中...' : '开始诊断'}
-                    {!isAnalyzing && <ArrowRight size={24} />}
+                    {!isActive ? '请先激活服务' : (isAnalyzing ? '诊断中...' : '开始诊断')}
+                    {isActive && !isAnalyzing && <ArrowRight size={24} />}
                 </button>
+
+                {!isActive && (
+                    <div className="mt-6 p-6 bg-white rounded-3xl shadow-lg border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <h3 className="text-slate-800 font-bold mb-4 flex items-center gap-2">
+                            🔑 激活完整功能
+                        </h3>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={activationCode}
+                                onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                                placeholder="输入激活码 (如: MVP2-TEST-001)"
+                                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#667EEA] transition-colors"
+                            />
+                            <button
+                                onClick={handleActivate}
+                                disabled={isActivating || !activationCode}
+                                className="px-6 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-all"
+                            >
+                                {isActivating ? '...' : '激活'}
+                            </button>
+                        </div>
+                        <p className="mt-3 text-xs text-slate-400">
+                            激活后可永久解锁当前版本的所有诊断功能
+                        </p>
+                    </div>
+                )}
+
                 <p className="text-center text-xs text-slate-400 mt-4">
                     AI 仅用于辅助教学，结果仅供参考
                 </p>

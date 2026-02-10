@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { generateHash, getCachedResult, setCachedResult } from './cache';
 
 /**
  * 429/Concurrency Solution: Backend Request Queue
@@ -55,6 +56,13 @@ export async function identifyGeometry(imageBase64: string): Promise<string> {
         throw new Error("CRITICAL: GEMINI_API_KEY 未找到");
     }
 
+    // 1. 检查缓存
+    const imageHash = generateHash(imageBase64);
+    const cached = getCachedResult(imageHash);
+    if (cached) {
+        return cached;
+    }
+
     // Optimization & Token Control
     const MAX_RETRIES = 5; // 可控重试
     const MAX_OUTPUT_TOKENS = 1000; // 降成本
@@ -91,6 +99,8 @@ export async function identifyGeometry(imageBase64: string): Promise<string> {
                     const data = await response.json();
                     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
                     console.log('✅ [Gemini] Success!');
+                    // 存储缓存
+                    setCachedResult(imageHash, text);
                     return text;
                 }
 

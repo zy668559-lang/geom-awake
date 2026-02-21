@@ -117,11 +117,11 @@ export default function ReportPage() {
                             if (isUnlocked) {
                                 router.push("/repair");
                             } else {
-                                router.push("/unlock");
+                                router.push("/unlock?next=%2Frepair");
                             }
                         }}
                     >
-                        输入激活码，解锁 7 天修复
+                        开始7天修复
                         <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                     </button>
 

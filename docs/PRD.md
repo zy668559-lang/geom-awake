@@ -55,3 +55,12 @@
 - **Boundary**:
   - 不改 `/api/analyze`，不改诊断请求次数策略。
   - 不新增任何外部 API 调用，确保诊断链路稳定。
+
+### 2026-02-21 - Report to Unlock to Repair gate strategy
+- **Decision**:
+  - 在报告页提供统一入口按钮“开始7天修复”。
+  - 未解锁用户跳转 `/unlock?next=/repair`。
+  - 解锁成功后自动回跳到 `next`（默认 `/repair`）。
+- **Boundary**:
+  - 不改 `/api/analyze` 诊断链路。
+  - 不新增外部 API 调用，全部前端本地状态控制。

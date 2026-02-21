@@ -1,18 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowRight, ChevronLeft } from "lucide-react";
+
+function resolveNextPath(nextValue: string | null): string {
+    if (!nextValue) return "/repair";
+    if (!nextValue.startsWith("/") || nextValue.startsWith("//")) return "/repair";
+    return nextValue;
+}
 
 export default function UnlockPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
+
+    const nextPath = useMemo(() => resolveNextPath(searchParams.get("next")), [searchParams]);
+
+    useEffect(() => {
+        const isUnlocked = localStorage.getItem("repair_unlocked") === "true";
+        if (isUnlocked) {
+            router.replace(nextPath);
+        }
+    }, [nextPath, router]);
 
     const handleUnlock = () => {
         if (code === "123456") {
             localStorage.setItem("repair_unlocked", "true");
-            router.push("/repair");
+            router.push(nextPath);
         } else {
             setError("激活码不对哦，再检查一下？");
             setTimeout(() => setError(""), 2000);

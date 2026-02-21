@@ -79,3 +79,22 @@
   - `app/retest/result/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
+
+## T-204 Report->Unlock->Repair Gate
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - 打通“报告页 -> 解锁页 -> 7天修复”的闭环入口。
+- **Change Points**:
+  - 报告页增加入口按钮“开始7天修复”。
+  - 入口逻辑：未解锁跳 `/unlock?next=/repair`；已解锁直达 `/repair`。
+  - 解锁页支持 `next` 参数，解锁成功自动回跳。
+- **Acceptance (DoD)**:
+  - 报告页点击“开始7天修复”按解锁状态正确分流。
+  - 解锁成功后自动回到 `next`（默认 `/repair`）。
+  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 继续 PASS。
+- **Impacted Files**:
+  - `app/report/page.tsx`
+  - `app/unlock/page.tsx`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`

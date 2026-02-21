@@ -62,13 +62,13 @@ test("processing page diagnosis network audit", async ({ page }) => {
     console.log("");
   });
 
-  await page.addInitScript(() => {
-    const tinyPngBase64 =
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zf5gAAAAASUVORK5CYII=";
-    localStorage.setItem("pending_geometry_image", tinyPngBase64);
-  });
-
   await page.goto("/processing", { waitUntil: "domcontentloaded" });
+  const tinyPngBase64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zf5gAAAAASUVORK5CYII=";
+  await page.evaluate((image) => {
+    localStorage.setItem("pending_geometry_image", image);
+  }, tinyPngBase64);
+  await page.reload({ waitUntil: "domcontentloaded" });
 
   const diagnosisButtons = page.locator("div.grid > button");
   await expect(diagnosisButtons.first()).toBeVisible({ timeout: 20_000 });

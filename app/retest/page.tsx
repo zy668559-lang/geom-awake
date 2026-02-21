@@ -8,7 +8,7 @@ import {
     RepairCause,
     isRepairCause,
 } from "@/data/training/repair_7days";
-import { getRetestPack } from "@/data/retest/retest_pack";
+import { getRetest6QPack } from "@/data/retest_6q";
 
 type AnswerMap = Record<string, number | undefined>;
 
@@ -34,7 +34,7 @@ export default function RetestPage() {
         setAnswers({});
     }, [selectedCause]);
 
-    const pack = useMemo(() => getRetestPack(selectedCause), [selectedCause]);
+    const pack = useMemo(() => getRetest6QPack(selectedCause), [selectedCause]);
     const total = pack.questions.length;
 
     const answeredCount = useMemo(
@@ -49,7 +49,7 @@ export default function RetestPage() {
         }
 
         let hitCount = 0;
-        const wrongItems: Array<{ id: string; keyPoint: string; correctionCommand: string }> = [];
+        const wrongItems: Array<{ id: string; wrongReason: string }> = [];
 
         for (const q of pack.questions) {
             const userChoice = answers[q.id];
@@ -59,8 +59,7 @@ export default function RetestPage() {
             } else {
                 wrongItems.push({
                     id: q.id,
-                    keyPoint: q.keyPoint,
-                    correctionCommand: q.correctionCommand,
+                    wrongReason: q.wrongReason,
                 });
             }
         }
@@ -76,6 +75,7 @@ export default function RetestPage() {
             fixed,
             wrongItems,
             verdict: fixed ? "这块已经明显稳住了。" : "还差一口气，再补两轮就稳。",
+            suggestion: fixed ? "进入 upsell" : "再练一轮",
         };
 
         localStorage.setItem("latest_retest_result", JSON.stringify(result));
@@ -87,7 +87,8 @@ export default function RetestPage() {
             hitRate: String(hitRate),
             fixed: fixed ? "1" : "0",
             verdict: result.verdict,
-            wrongCommands: wrongItems.map((item) => item.correctionCommand).join("||"),
+            suggestion: result.suggestion,
+            wrongReasons: wrongItems.map((item) => item.wrongReason).join("||"),
         });
         router.push(`/retest/result?${search.toString()}`);
     };
@@ -139,7 +140,7 @@ export default function RetestPage() {
                         <section key={q.id} className="bg-white rounded-[24px] p-5 shadow-sm">
                             <p className="text-xs text-slate-400 font-bold tracking-widest uppercase mb-2">第 {idx + 1} 题</p>
                             <p className="text-lg font-bold text-slate-800 mb-2">{q.stem}</p>
-                            <p className="text-sm text-slate-500 mb-4">{q.answerPrompt}</p>
+                            <p className="text-sm text-slate-500 mb-4">从三个选项里选你最稳的答案。</p>
                             <div className="space-y-2">
                                 {q.options.map((option, optionIdx) => {
                                     const active = answers[q.id] === optionIdx;

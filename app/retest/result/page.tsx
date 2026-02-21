@@ -20,12 +20,13 @@ export default function RetestResultPage() {
     const hitRate = Number.parseInt(searchParams.get("hitRate") || "0", 10);
     const fixed = searchParams.get("fixed") === "1";
     const verdict = searchParams.get("verdict") || (fixed ? "这块已经明显稳住了。" : "还差一口气，再补两轮就稳。");
-    const wrongCommandsRaw = searchParams.get("wrongCommands") || "";
+    const suggestion = searchParams.get("suggestion") || (fixed ? "进入 upsell" : "再练一轮");
+    const wrongReasonsRaw = searchParams.get("wrongReasons") || "";
 
-    const wrongCommands = useMemo(() => {
-        if (!wrongCommandsRaw) return [];
-        return wrongCommandsRaw.split("||").filter(Boolean);
-    }, [wrongCommandsRaw]);
+    const wrongReasons = useMemo(() => {
+        if (!wrongReasonsRaw) return [];
+        return wrongReasonsRaw.split("||").filter(Boolean);
+    }, [wrongReasonsRaw]);
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
@@ -70,13 +71,13 @@ export default function RetestResultPage() {
                     </div>
                 </section>
 
-                {wrongCommands.length > 0 && (
+                {wrongReasons.length > 0 && (
                     <section className="bg-white rounded-[24px] p-6 shadow-sm">
-                        <p className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-3">还要补的纠错口令</p>
+                        <p className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-3">错因解释（本轮没命中）</p>
                         <div className="space-y-2">
-                            {wrongCommands.slice(0, 4).map((command, idx) => (
-                                <p key={`${command}-${idx}`} className="text-slate-700 font-bold">
-                                    {idx + 1}. {command}
+                            {wrongReasons.slice(0, 4).map((reason, idx) => (
+                                <p key={`${reason}-${idx}`} className="text-slate-700 font-bold">
+                                    {idx + 1}. {reason}
                                 </p>
                             ))}
                         </div>
@@ -84,14 +85,19 @@ export default function RetestResultPage() {
                 )}
 
                 <button
-                    onClick={() => router.push("/upsell")}
+                    onClick={() => {
+                        if (suggestion === "再练一轮") {
+                            router.push(`/retest?cause=${searchParams.get("cause") || "draw_line"}`);
+                            return;
+                        }
+                        router.push("/upsell");
+                    }}
                     className="w-full bg-[#1A1A1A] text-white text-xl font-bold py-5 rounded-[24px] shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
-                    继续下一步：把分数稳住
+                    建议：{suggestion}
                     <ArrowRight size={20} />
                 </button>
             </main>
         </div>
     );
 }
-

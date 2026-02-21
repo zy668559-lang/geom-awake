@@ -47,3 +47,11 @@
 - **Why**:
   - Content delivery can be expanded safely without introducing instability to the existing diagnosis path.
   - Static package keeps behavior deterministic and supports immediate MVP2 content handoff.
+
+### 2026-02-21 - Retest static 6Q local-judge mode
+- **Decision**:
+  - 复检采用静态 6 题模式，按错因线（画线想不到/条件关系乱/证明写不出）出题。
+  - 判定在前端本地完成，输出命中率与建议，不接入外部题库或外部判题服务。
+- **Boundary**:
+  - 不改 `/api/analyze`，不改诊断请求次数策略。
+  - 不新增任何外部 API 调用，确保诊断链路稳定。

@@ -28,6 +28,7 @@ export default function ProcessingPage() {
     const [imageBase64, setImageBase64] = useState<string | null>(null);
 
     const hasInitialized = useRef(false);
+    const submitLockRef = useRef(false);
     // 自动流程：读取图片并立即进入交互模式
     useEffect(() => {
         if (hasInitialized.current) return;
@@ -41,7 +42,8 @@ export default function ProcessingPage() {
     }, []);
 
     const handleStartDiagnosis = async (point: string) => {
-        if (isLoading) return; // 防重复提交
+        if (isLoading || submitLockRef.current) return; // 双保险：防重复提交
+        submitLockRef.current = true;
 
         const finalPoint = point || stuckPoint;
         setStuckPoint(finalPoint);
@@ -79,6 +81,7 @@ export default function ProcessingPage() {
             setState("INTERACTING");
         } finally {
             setIsLoading(false);
+            submitLockRef.current = false;
         }
     };
 

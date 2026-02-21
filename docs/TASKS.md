@@ -60,3 +60,27 @@
   - `app/repair/day/[id]/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
+
+## T-203 复检对比+续费入口
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - 在不新增外部 API、不断现有诊断链路的前提下，补齐 `Day7 -> 复检 -> 对比 -> 续费` 闭环。
+- **Not-to-do**:
+  - 不接入题库服务。
+  - 不新增 AI 判题接口。
+  - 不改 `/api/analyze` 诊断调用路径与并发控制行为。
+- **Acceptance (DoD)**:
+  - `/retest` 可按错因进入并完成 6-10 题静态复检提交。
+  - `/retest/result` 可展示“前=体检标签/后=复检命中率”与“是否修掉”。
+  - `Day7` 可一键跳转到带 `cause` 的 `/retest`。
+  - `/upsell` 提供两个最小续费入口按钮，文案口语化。
+  - `tests/diagnostic.spec.ts` (chromium) 继续 PASS。
+- **Impacted Files**:
+  - `data/retest/retest_pack.ts`
+  - `app/retest/page.tsx`
+  - `app/retest/result/page.tsx`
+  - `app/repair/day/[id]/page.tsx`
+  - `app/upsell/page.tsx`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`

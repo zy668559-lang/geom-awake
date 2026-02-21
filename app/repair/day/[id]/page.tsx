@@ -92,10 +92,16 @@ export default function DayDetailsPage() {
 
                 {/* 底部按钮 */}
                 <button
-                    onClick={() => router.push("/repair/submit")}
+                    onClick={() => {
+                        if (content.day === 7) {
+                            router.push(`/retest?cause=${selectedCause}`);
+                            return;
+                        }
+                        router.push("/repair/submit");
+                    }}
                     className="w-full bg-[#1A1A1A] text-white text-xl font-bold py-6 rounded-[24px] shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
                 >
-                    我写好了，陈老师帮我看看
+                    {content.day === 7 ? "Day7完成，开始复检" : "我写好了，陈老师帮我看看"}
                     <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </button>
             </main>

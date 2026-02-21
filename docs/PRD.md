@@ -28,3 +28,9 @@
 - **Not included now**:
   - No AI-based judging for repair content in this phase.
   - No adaptive content generation in this phase.
+
+### 2026-02-21 - Retest and Upsell as paid-loop exit
+- **Decision**:
+  - Retest and upsell are the MVP2 monetization loop exit.
+  - The loop path is: `Day7 -> /retest -> /retest/result -> /upsell`.
+  - Retest uses static local pack scoring (no external API) to keep flow stable and explainable.

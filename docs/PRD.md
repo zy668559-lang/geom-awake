@@ -20,3 +20,11 @@
   - No auth/account system expansion.
   - No large content bank enrichment beyond placeholders.
 
+### 2026-02-21 - MVP2 training content delivery mode
+- **Delivery decision**:
+  - MVP2 7-day repair content is delivered as a static content package (`data`) rendered by pages.
+  - No new external API calls are introduced for this stage.
+  - Existing diagnosis chain remains unchanged.
+- **Not included now**:
+  - No AI-based judging for repair content in this phase.
+  - No adaptive content generation in this phase.

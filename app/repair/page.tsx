@@ -2,30 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Calendar, CheckCircle2, Lock, ArrowRight } from "lucide-react";
-
-const PLAN_DATA = [
-    { id: 1, title: "Day 1: 见微知著", status: "unlocked", task: "识别图形中的隐藏垂直关系" },
-    { id: 2, title: "Day 2: 顺藤摸瓜", status: "locked", task: "辅助线的连法：从垂直推导中线" },
-    { id: 3, title: "Day 3: 移花接木", status: "locked", task: "全等替换：图形旋转的核心技巧" },
-    { id: 4, title: "Day 4: 抽丝剥茧", status: "locked", task: "拆解复杂多边形为基本三角形" },
-    { id: 5, title: "Day 5: 举一反三", status: "locked", task: "相似构造：从局部看整体比例" },
-    { id: 6, title: "Day 6: 返璞归真", status: "locked", task: "经典母题串联与识别" },
-    { id: 7, title: "Day 7: 成果验收", status: "locked", task: "复检对比：拿下这门题" },
-];
+import { ChevronLeft, ArrowRight } from "lucide-react";
+import {
+    getRepairPack,
+    REPAIR_CAUSE_OPTIONS,
+    RepairCause,
+    isRepairCause,
+} from "@/data/training/repair_7days";
 
 export default function RepairPage() {
     const router = useRouter();
     const [isLoaded, setIsLoaded] = useState(false);
+    const [selectedCause, setSelectedCause] = useState<RepairCause>("draw_line");
 
     useEffect(() => {
         const isUnlocked = localStorage.getItem("repair_unlocked") === "true";
         if (!isUnlocked) {
             router.push("/unlock");
         } else {
+            const cachedCause = localStorage.getItem("repair_selected_cause");
+            if (isRepairCause(cachedCause)) {
+                setSelectedCause(cachedCause);
+            }
             setIsLoaded(true);
         }
     }, [router]);
+
+    const currentPack = getRepairPack(selectedCause);
 
     if (!isLoaded) return null;
 
@@ -46,37 +49,50 @@ export default function RepairPage() {
             <main className="flex-1 max-w-2xl mx-auto w-full p-6">
                 <header className="mb-8 text-center">
                     <h1 className="text-3xl font-black text-slate-800 mb-2">陈老师 7 天提分计划</h1>
-                    <p className="text-slate-500 font-medium">每天 15 分钟，攻克几何大题</p>
+                    <p className="text-slate-500 font-medium">{currentPack.label} · {currentPack.subtitle}</p>
                 </header>
 
+                <section className="mb-6 bg-white rounded-[24px] p-4 shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">选择当前错因</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {REPAIR_CAUSE_OPTIONS.map((cause) => (
+                            <button
+                                key={cause.key}
+                                onClick={() => {
+                                    setSelectedCause(cause.key);
+                                    localStorage.setItem("repair_selected_cause", cause.key);
+                                }}
+                                className={`rounded-2xl px-4 py-3 text-left border-2 transition-all ${selectedCause === cause.key
+                                    ? "border-[#667EEA] bg-[#667EEA]/5"
+                                    : "border-slate-100 bg-slate-50 hover:bg-slate-100"
+                                    }`}
+                            >
+                                <p className="text-sm font-black text-slate-800">{cause.label}</p>
+                                <p className="text-xs text-slate-500 mt-1">{cause.subtitle}</p>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
                 <div className="space-y-4 pb-24">
-                    {PLAN_DATA.map((day) => (
+                    {currentPack.days.map((day) => (
                         <div
-                            key={day.id}
-                            onClick={() => day.status === "unlocked" && router.push(`/repair/day/${day.id}`)}
+                            key={day.day}
+                            onClick={() => router.push(`/repair/day/${day.day}?cause=${selectedCause}`)}
                             className={`
                                 relative p-6 rounded-[24px] border-2 transition-all cursor-pointer group
-                                ${day.status === "unlocked"
-                                    ? "bg-white border-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-                                    : "bg-slate-100 border-transparent opacity-60 grayscale cursor-not-allowed"}
+                                bg-white border-white shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]
                             `}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`
-                                    w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg
-                                    ${day.status === "unlocked" ? "bg-[#667EEA] text-white" : "bg-slate-200 text-slate-400"}
-                                `}>
-                                    {day.id}
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg bg-[#667EEA] text-white">
+                                    {day.day}
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-lg font-black text-slate-800">{day.title}</h3>
-                                    <p className="text-sm font-medium text-slate-500">{day.task}</p>
+                                    <h3 className="text-lg font-black text-slate-800">Day {day.day}: {day.title}</h3>
+                                    <p className="text-sm font-medium text-slate-500">{day.command}</p>
                                 </div>
-                                {day.status === "unlocked" ? (
-                                    <ArrowRight size={20} className="text-slate-300 group-hover:text-[#667EEA] group-hover:translate-x-1 transition-all" />
-                                ) : (
-                                    <Lock size={20} className="text-slate-400" />
-                                )}
+                                <ArrowRight size={20} className="text-slate-300 group-hover:text-[#667EEA] group-hover:translate-x-1 transition-all" />
                             </div>
                         </div>
                     ))}

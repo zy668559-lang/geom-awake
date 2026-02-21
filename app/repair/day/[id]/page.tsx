@@ -1,34 +1,42 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Send, Sparkles, BookOpen, Quote } from "lucide-react";
-
-const DAY_CONTENT: Record<number, any> = {
-    1: {
-        title: "见微知著",
-        password: "“看见”垂直，就是“看见”解题的后半段。",
-        problem: "在右图中，找出隐含的直角三角形，并标出理由。",
-        review: "有些线段虽然没在那画直角符号，但性质已经替它写好了。",
-    }
-};
+import { getRepairPack, isRepairCause } from "@/data/training/repair_7days";
 
 export default function DayDetailsPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const dayId = Number(params.id);
-    const content = DAY_CONTENT[dayId] || DAY_CONTENT[1]; // Fallback to day 1
+
+    const queryCause = searchParams.get("cause");
+    const cachedCause = typeof window !== "undefined" ? localStorage.getItem("repair_selected_cause") : null;
+    const selectedCause = isRepairCause(queryCause)
+        ? queryCause
+        : isRepairCause(cachedCause)
+            ? cachedCause
+            : "draw_line";
+
+    useEffect(() => {
+        localStorage.setItem("repair_selected_cause", selectedCause);
+    }, [selectedCause]);
+
+    const currentPack = getRepairPack(selectedCause);
+    const content = currentPack.days.find((day) => day.day === dayId) || currentPack.days[0];
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
             <nav className="p-6 flex items-center justify-between bg-white shadow-sm">
                 <button
-                    onClick={() => router.push("/repair")}
+                    onClick={() => router.push(`/repair?cause=${selectedCause}`)}
                     className="flex items-center gap-2 text-slate-400 font-bold hover:text-slate-600 transition-colors"
                 >
                     <ChevronLeft size={20} />
                     返回路书
                 </button>
-                <span className="font-black text-slate-800">Day {dayId} 特训中</span>
+                <span className="font-black text-slate-800">{currentPack.label} · Day {content.day}</span>
                 <div className="w-20" />
             </nav>
 
@@ -40,7 +48,7 @@ export default function DayDetailsPage() {
                         <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase">今日口令</h2>
                     </div>
                     <p className="text-2xl font-black text-slate-800 leading-relaxed italic">
-                        {content.password}
+                        {content.command}
                     </p>
                 </div>
 
@@ -52,12 +60,16 @@ export default function DayDetailsPage() {
                     </div>
 
                     <div className="aspect-video bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
-                        <p className="text-slate-400 font-medium">[ 题目图示占位 ]</p>
+                        <p className="text-slate-400 font-medium">[ Day {content.day} 文本短题占位 ]</p>
                     </div>
 
-                    <p className="text-xl font-bold text-slate-700 leading-relaxed">
-                        {content.problem}
-                    </p>
+                    <div className="space-y-3">
+                        {content.shortProblems.map((problem, idx) => (
+                            <p key={idx} className="text-lg font-bold text-slate-700 leading-relaxed">
+                                {idx + 1}. {problem}
+                            </p>
+                        ))}
+                    </div>
                 </div>
 
                 {/* 3. 陈老师复盘 */}
@@ -67,7 +79,14 @@ export default function DayDetailsPage() {
                         <h2 className="text-sm font-bold text-[#667EEA] tracking-widest uppercase">陈老师复盘</h2>
                     </div>
                     <p className="text-lg font-medium text-slate-600 italic">
-                        “{content.review}”
+                        “{content.reviewTemplate}”
+                    </p>
+                </div>
+
+                <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+                    <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-3">家长提示</h2>
+                    <p className="text-lg text-slate-700 leading-relaxed">
+                        {content.parentTip}
                     </p>
                 </div>
 

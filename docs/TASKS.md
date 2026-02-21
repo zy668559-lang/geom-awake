@@ -40,3 +40,23 @@
   - `3000` 已固定单监听，`tests/diagnostic.spec.ts` 已升级并通过（Chromium）。
   - `/api/analyze` 已加入可解释重试退避、同载荷并发合并、TTL 缓存命中日志。
   - MVP2 壳子闭环已打通到独立结果页 `/repair/submit/result`。
+
+## T-202 7天修复内容包
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - 以静态内容包方式交付 7 天修复内容，并接入 `/repair` 与 Day 详情页渲染。
+- **Scope**:
+  - 覆盖 3 个高频错因：`画线想不到`、`条件关系乱`、`证明写不出`。
+  - 每个错因均提供 Day1~Day7，且每天包含：口令、短题（1-2题文本）、一句复盘、家长提示。
+  - 不新增外部 API，不改现有诊断链路。
+- **Acceptance (DoD)**:
+  - `/repair` 可切换错因并展示 Day1~Day7 卡片。
+  - 点击 Day 进入详情页，正确渲染该天静态内容字段。
+  - `tests/diagnostic.spec.ts` 在 Chromium 继续 PASS，确保“1点击=1请求”未受影响。
+- **Impacted Files**:
+  - `data/training/repair_7days.ts`
+  - `app/repair/page.tsx`
+  - `app/repair/day/[id]/page.tsx`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`

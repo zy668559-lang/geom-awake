@@ -1,0 +1,42 @@
+# TASKS
+
+## T-201 MVP2 Local Closure and Stability
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - Stabilize local dev on `http://localhost:3000`.
+  - Make `tests/diagnostic.spec.ts` deterministic and passing on Chromium.
+  - Deliver MVP2 shell flow closure (`/report -> /unlock -> /repair -> /repair/day/1 -> /repair/submit -> /repair/submit/result -> /retest -> /upsell`).
+  - Make `/api/analyze` 429 handling controllable (retry/backoff + logs + duplicate burst protection).
+- **Change Points**:
+  - Process and runtime scripts: single-instance dev on port 3000.
+  - Test hardening: network audit assertions and readiness stability.
+  - Frontend anti-repeat submit hardening for diagnosis trigger.
+  - Backend `/api/analyze`: exponential backoff retries, retry caps, idempotent TTL cache, explainable logs.
+  - MVP2 shell pages and routing completion with placeholder copy only.
+  - Delivery docs: PRD decision log + walkthrough.
+- **Acceptance (DoD)**:
+  - Only one listener PID on local port `3000`, and dev remains on `http://localhost:3000`.
+  - One diagnosis trigger produces exactly one `POST /api/analyze` request.
+  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` passes.
+  - Unlock code `123456` gates `/repair` flow correctly.
+  - 3 rapid clicks still produce one analysis request; transient 429 uses bounded backoff and clear feedback.
+- **Expected Impacted Files**:
+  - `playwright.config.ts`
+  - `tests/diagnostic.spec.ts`
+  - `app/processing/page.tsx`
+  - `app/api/analyze/route.ts`
+  - `app/report/page.tsx`
+  - `app/repair/submit/page.tsx`
+  - `app/repair/submit/result/page.tsx`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`
+  - `docs/walkthrough.md`
+- **Rollback Plan**:
+  - Revert commit group by module (A/B/C/D/E) in reverse order.
+  - Disable analyze retry/cache by removing helper functions in `app/api/analyze/route.ts`.
+  - Restore previous submit page behavior by reverting `app/repair/submit/page.tsx` and deleting result page.
+- **Execution Notes**:
+  - `3000` 已固定单监听，`tests/diagnostic.spec.ts` 已升级并通过（Chromium）。
+  - `/api/analyze` 已加入可解释重试退避、同载荷并发合并、TTL 缓存命中日志。
+  - MVP2 壳子闭环已打通到独立结果页 `/repair/submit/result`。

@@ -60,7 +60,7 @@ export default function DayDetailsPage() {
                     </div>
 
                     <div className="aspect-video bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
-                        <p className="text-slate-400 font-medium">[ Day {content.day} 文本短题占位 ]</p>
+                        <p className="text-slate-500 font-medium">先做两道小题，按口令一步一步来。</p>
                     </div>
 
                     <div className="space-y-3">

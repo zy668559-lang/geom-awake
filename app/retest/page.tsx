@@ -31,6 +31,7 @@ export default function RetestPage() {
 
     useEffect(() => {
         localStorage.setItem("repair_selected_cause", selectedCause);
+        localStorage.setItem("latest_retest_cause", selectedCause);
         setAnswers({});
     }, [selectedCause]);
 
@@ -79,6 +80,7 @@ export default function RetestPage() {
         };
 
         localStorage.setItem("latest_retest_result", JSON.stringify(result));
+        localStorage.setItem("latest_retest_cause", selectedCause);
         const search = new URLSearchParams({
             cause: selectedCause,
             beforeTag: pack.label,

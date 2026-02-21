@@ -3,11 +3,18 @@
 import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ArrowRight, CheckCircle2, CircleAlert } from "lucide-react";
-import { REPAIR_CAUSE_OPTIONS } from "@/data/training/repair_7days";
+import { REPAIR_CAUSE_OPTIONS, isRepairCause } from "@/data/training/repair_7days";
 
 function findCauseLabel(rawCause: string | null): string {
-    const found = REPAIR_CAUSE_OPTIONS.find((item) => item.key === rawCause);
-    return found?.label || "未指定错因";
+    const safeCause = isRepairCause(rawCause)
+        ? rawCause
+        : (typeof window !== "undefined" && isRepairCause(localStorage.getItem("latest_retest_cause"))
+            ? localStorage.getItem("latest_retest_cause")
+            : (typeof window !== "undefined" && isRepairCause(localStorage.getItem("repair_selected_cause"))
+                ? localStorage.getItem("repair_selected_cause")
+                : "draw_line"));
+    const found = REPAIR_CAUSE_OPTIONS.find((item) => item.key === safeCause);
+    return found?.label || "画线想不到";
 }
 
 export default function RetestResultPage() {

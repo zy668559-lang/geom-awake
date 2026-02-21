@@ -45,17 +45,26 @@
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 补全三条错因线（`画线想不到/条件关系乱/证明写不出`）各 7 天静态训练内容。
+  - 将 MVP2 补强为可售卖“交付闭环”：内容可交付、复检标签稳定、支持无 API 演示模式。
+- **Change Points**:
+  - 补齐三条错因线各 7 天内容，清空占位文案，统一口语化风格。
+  - 修正复检标签传递链路，确保 `/retest/result` 不出现“未指定错因”。
+  - 增加 `/processing?demo=1` 本地夹具模式，跳过模型调用完成演示。
 - **Not-to-do**:
-  - 不新增任何外部 API。
-  - 不改 `/api/analyze` 链路。
-  - 不改“1 click = 1 request”请求次数策略。
+  - 不修改 `/api/analyze`。
+  - 不新增外部 API 调用。
+  - 不改诊断请求次数策略（1 click = 1 request）。
 - **Acceptance (DoD)**:
-  - 内容包中 21 天内容全部具备 `command`、`microPractice`、`reflectionPrompt`。
-  - `/repair` 可切换三条错因线，并进入 `/repair/day/1..7` 正常显示内容。
-  - `tests/diagnostic.spec.ts` 在 Chromium 继续 PASS。
+  - 三条错因线 21 天内容全部可直接展示，无占位字样。
+  - 复检流程保留选中错因线直达结果页，标签显示稳定。
+  - `?demo=1` 模式不走模型请求也能完成演示闭环。
+  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 继续 PASS。
 - **Impacted Files**:
   - `data/training/repair_7days.ts`
+  - `app/processing/page.tsx`
+  - `app/retest/page.tsx`
+  - `app/retest/result/page.tsx`
+  - `app/repair/day/[id]/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Brain, Sparkles, Search, MessageCircle, ArrowRight } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Brain, Search, MessageCircle, ArrowRight } from "lucide-react";
 
 type SearchState = "IDENTIFYING" | "INTERACTING" | "REASONING" | "COMPLETE";
 
@@ -20,8 +20,20 @@ const STUCK_OPTIONS = [
     "我不确定，让陈老师看看"
 ];
 
+const DEMO_DIAGNOSIS_FIXTURE = {
+    stuckPoint: "你不是不会做，是第一步总容易犹豫。",
+    rootCause: "题目一上来你就想一步到位，所以关键关系反而看漏了。",
+    coachAdvice: "咱们先慢半拍，先把已知条件圈出来，再选一条最短推进线。",
+    threeDayPlan: [
+        { day: 1, task: "每天只做2题，先练“看点-选线”这一步。" },
+        { day: 2, task: "把每题的第一句“因为”写完整，不求快。" },
+        { day: 3, task: "做完后口述1分钟：我今天到底卡在哪。" },
+    ],
+};
+
 export default function ProcessingPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [state, setState] = useState<SearchState>("IDENTIFYING");
     const [stuckPoint, setStuckPoint] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -29,17 +41,18 @@ export default function ProcessingPage() {
 
     const hasInitialized = useRef(false);
     const submitLockRef = useRef(false);
+    const demoMode = searchParams.get("demo") === "1";
     // 自动流程：读取图片并立即进入交互模式
     useEffect(() => {
         if (hasInitialized.current) return;
         hasInitialized.current = true;
 
         const mockImg = localStorage.getItem("pending_geometry_image");
-        if (mockImg) {
-            setImageBase64(mockImg);
+        if (mockImg || demoMode) {
+            setImageBase64(mockImg || "demo-image");
             setState("INTERACTING");
         }
-    }, []);
+    }, [demoMode]);
 
     const handleStartDiagnosis = async (point: string) => {
         if (isLoading || submitLockRef.current) return; // 双保险：防重复提交
@@ -51,6 +64,16 @@ export default function ProcessingPage() {
         setIsLoading(true);
 
         try {
+            if (demoMode) {
+                const demoResult = {
+                    ...DEMO_DIAGNOSIS_FIXTURE,
+                    stuckPoint: finalPoint || DEMO_DIAGNOSIS_FIXTURE.stuckPoint,
+                };
+                localStorage.setItem("latest_diagnosis", JSON.stringify(demoResult));
+                router.push("/report");
+                return;
+            }
+
             const res = await fetch("/api/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

@@ -64,3 +64,12 @@
 - **Boundary**:
   - 不改 `/api/analyze` 诊断链路。
   - 不新增外部 API 调用，全部前端本地状态控制。
+
+### 2026-02-21 - Sellable deliverable loop hardening
+- **Decision**:
+  - 把 7 天内容占位全部替换成可直接交付的静态文案（3 条错因线 x 7 天）。
+  - 复检结果页强制按已选错因线兜底显示，不再出现“未指定错因”。
+  - 增加 `?demo=1` 演示模式，直接使用本地夹具走完整链路，避免 429 风险。
+- **Boundary**:
+  - 不改 `/api/analyze`，不新增任何外部 API。
+  - 保持 `tests/diagnostic.spec.ts` 通过，继续满足 1 click = 1 request。

@@ -34,3 +34,16 @@
   - Retest and upsell are the MVP2 monetization loop exit.
   - The loop path is: `Day7 -> /retest -> /retest/result -> /upsell`.
   - Retest uses static local pack scoring (no external API) to keep flow stable and explainable.
+
+### 2026-02-21 - T-202 static 7-day content completion
+- **Do**:
+  - Complete 3 repair lines (`画线想不到/条件关系乱/证明写不出`) with full 7-day static content.
+  - Standardize each day payload to include `command`, `microPractice`, `reflectionPrompt`.
+  - Keep current page rendering and route flow unchanged, only feed richer static content.
+- **Do not**:
+  - Do not add any external API.
+  - Do not change `/api/analyze`.
+  - Do not change request count/concurrency strategy for diagnosis.
+- **Why**:
+  - Content delivery can be expanded safely without introducing instability to the existing diagnosis path.
+  - Static package keeps behavior deterministic and supports immediate MVP2 content handoff.

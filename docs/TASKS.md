@@ -45,19 +45,17 @@
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 以静态内容包方式交付 7 天修复内容，并接入 `/repair` 与 Day 详情页渲染。
-- **Scope**:
-  - 覆盖 3 个高频错因：`画线想不到`、`条件关系乱`、`证明写不出`。
-  - 每个错因均提供 Day1~Day7，且每天包含：口令、短题（1-2题文本）、一句复盘、家长提示。
-  - 不新增外部 API，不改现有诊断链路。
+  - 补全三条错因线（`画线想不到/条件关系乱/证明写不出`）各 7 天静态训练内容。
+- **Not-to-do**:
+  - 不新增任何外部 API。
+  - 不改 `/api/analyze` 链路。
+  - 不改“1 click = 1 request”请求次数策略。
 - **Acceptance (DoD)**:
-  - `/repair` 可切换错因并展示 Day1~Day7 卡片。
-  - 点击 Day 进入详情页，正确渲染该天静态内容字段。
-  - `tests/diagnostic.spec.ts` 在 Chromium 继续 PASS，确保“1点击=1请求”未受影响。
+  - 内容包中 21 天内容全部具备 `command`、`microPractice`、`reflectionPrompt`。
+  - `/repair` 可切换三条错因线，并进入 `/repair/day/1..7` 正常显示内容。
+  - `tests/diagnostic.spec.ts` 在 Chromium 继续 PASS。
 - **Impacted Files**:
   - `data/training/repair_7days.ts`
-  - `app/repair/page.tsx`
-  - `app/repair/day/[id]/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
 

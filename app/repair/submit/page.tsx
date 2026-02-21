@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Camera, Send, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Camera, ChevronLeft, Loader2, Send } from "lucide-react";
 
 export default function SubmitPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [stuckPoint, setStuckPoint] = useState("不知道怎么开始");
     const [content, setContent] = useState("");
-    const [result, setResult] = useState<any>(null);
-    const [retryCount, setRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState("");
+    const [retryCount, setRetryCount] = useState(0);
+    const submitLockRef = useRef(false);
 
-    // Hash of the last successful submission to prevent duplicate requests
+    // Hash of the last successful submission to prevent duplicate requests.
     const lastSubmissionHash = useRef("");
 
     const STUCK_POINTS = [
@@ -21,58 +21,72 @@ export default function SubmitPage() {
         "画不出辅助线",
         "看不出图形关系",
         "写到一半卡住了",
-        "算不出最后结果"
+        "算不出最后结果",
     ];
 
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    const handleSubmit = async (isRetry = false) => {
+    const handleSubmit = async () => {
+        if (isLoading || submitLockRef.current) return;
+
         const currentHash = JSON.stringify({ stuckPoint, content });
-
-        // 1. Client-side Idempotency
-        if (!isRetry && lastSubmissionHash.current === currentHash && result) {
+        if (lastSubmissionHash.current === currentHash) {
             console.log("[Client] Idempotent: Same content as before, skipping request.");
             return;
         }
 
+        submitLockRef.current = true;
         setIsLoading(true);
-        setStatusMsg(isRetry ? `正在尝试第 ${retryCount + 1} 次重试...` : "正在交给陈老师判定...");
+        setStatusMsg("正在交给陈老师判定...");
 
-        const submissionId = btoa(currentHash).slice(0, 16); // Simple hash for MVP2
+        const submissionId = btoa(currentHash).slice(0, 16);
 
         try {
-            const response = await fetch("/api/repair/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ submissionId, stuckPoint, content }),
-            });
+            const maxRetries = 3;
+            let attempt = 0;
+            let response: Response;
 
-            // 2. Exponential Backoff for 429
-            if (response.status === 429) {
-                if (retryCount < 3) {
-                    const waitTime = Math.pow(2, retryCount) * 1000;
-                    console.warn(`[Client] 429 Detected. Retrying in ${waitTime}ms... (Attempt ${retryCount + 1})`);
-                    setStatusMsg(`陈老师正在思考中，稍微等我 ${waitTime / 1000} 秒钟...`);
-                    setRetryCount(prev => prev + 1);
-                    await sleep(waitTime);
-                    return handleSubmit(true);
-                } else {
+            while (true) {
+                response = await fetch("/api/repair/submit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ submissionId, stuckPoint, content }),
+                });
+
+                if (response.status !== 429) break;
+                if (attempt >= maxRetries) {
                     throw new Error("陈老师今天太累了，请稍后再试（请求过多）");
                 }
+
+                const waitTime = 2 ** attempt * 1000;
+                attempt += 1;
+                setRetryCount(attempt);
+                setStatusMsg(
+                    `陈老师正在思考中，稍微等我 ${waitTime / 1000} 秒钟...（重试 ${attempt}/${maxRetries}）`
+                );
+                console.warn(`[Client] 429 Detected. Retrying in ${waitTime}ms... (Attempt ${attempt}/${maxRetries})`);
+                await sleep(waitTime);
             }
 
-            if (!response.ok) throw new Error("服务器出了点小差错，陈老师还在修。");
+            if (!response!.ok) throw new Error("服务器出了点小差错，陈老师还在修。");
 
-            const data = await response.json();
-            setResult(data);
+            const data = await response!.json();
             lastSubmissionHash.current = currentHash;
             setRetryCount(0);
             setStatusMsg("");
+
+            const search = new URLSearchParams({
+                passed: data.key_steps_appeared ? "1" : "0",
+                next: data.next_action || "保持复盘，继续推进下一题。",
+                retries: String(attempt),
+            });
+            router.push(`/repair/submit/result?${search.toString()}`);
         } catch (err: any) {
             console.error("[Client] Submit Error:", err);
             alert(err.message);
         } finally {
             setIsLoading(false);
+            submitLockRef.current = false;
         }
     };
 
@@ -91,13 +105,12 @@ export default function SubmitPage() {
             </nav>
 
             <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-6 pb-24">
-                {/* 1. 卡点选择 */}
                 <section className="bg-white rounded-[32px] p-8 shadow-sm">
                     <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-6 text-center">
                         你现在卡在哪了？
                     </h2>
                     <div className="flex flex-wrap gap-3 justify-center">
-                        {STUCK_POINTS.map(p => (
+                        {STUCK_POINTS.map((p) => (
                             <button
                                 key={p}
                                 onClick={() => setStuckPoint(p)}
@@ -114,7 +127,6 @@ export default function SubmitPage() {
                     </div>
                 </section>
 
-                {/* 2. 上传/输入 */}
                 <section className="bg-white rounded-[32px] p-8 shadow-sm">
                     <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-6 text-center">
                         拍个照，或者写下你的进度
@@ -133,9 +145,8 @@ export default function SubmitPage() {
                     />
                 </section>
 
-                {/* 3. 提交按钮 */}
                 <button
-                    onClick={() => handleSubmit()}
+                    onClick={handleSubmit}
                     disabled={isLoading}
                     className={`
                         w-full py-6 rounded-[24px] text-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2
@@ -156,42 +167,6 @@ export default function SubmitPage() {
                         </>
                     )}
                 </button>
-
-                {/* 4. 判定结果区域 */}
-                {result && (
-                    <div className="bg-green-50 border-2 border-green-100 rounded-[32px] p-8 animate-in zoom-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-3 mb-6">
-                            <CheckCircle2 className="text-green-500" size={28} />
-                            <h2 className="text-xl font-black text-slate-800">判定结果</h2>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                                <div className="mt-1 w-5 h-5 rounded-full bg-green-200 flex items-center justify-center shrink-0">
-                                    <span className="text-[10px] font-bold text-green-700">✓</span>
-                                </div>
-                                <p className="text-lg font-bold text-slate-700">
-                                    关键步骤提取成功：{result.key_steps_appeared ? "是" : "否"}
-                                </p>
-                            </div>
-
-                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">陈老师建议的下一步</p>
-                                <p className="text-xl font-black text-[#667EEA] leading-relaxed italic">
-                                    “{result.next_action}”
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={() => router.push("/retest")}
-                                className="w-full mt-4 bg-green-500 text-white py-4 rounded-2xl font-bold shadow-md hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-                            >
-                                我懂了，去复检
-                                <CheckCircle2 size={20} />
-                            </button>
-                        </div>
-                    </div>
-                )}
             </main>
         </div>
     );

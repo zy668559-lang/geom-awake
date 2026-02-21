@@ -67,6 +67,7 @@ function UpsellContent() {
                     </div>
 
                     <button
+                        onClick={() => router.push("/upload")}
                         className="w-full bg-[#1A1A1A] text-white text-xl font-bold py-6 rounded-[24px] shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mb-6"
                     >
                         立即购买

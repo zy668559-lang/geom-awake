@@ -39,7 +39,7 @@ export default function UnlockPage() {
 
                     <h1 className="text-2xl font-black text-slate-800 mb-2">解锁 7 天特训</h1>
                     <p className="text-slate-500 font-medium mb-8">
-                        这个是付费进阶内容哦，请输入你的 7 天邀请码。
+                        这个是付费进阶内容哦，请输入你的 7 天邀请码（MVP2 测试码：123456）。
                     </p>
 
                     <div className="space-y-6">

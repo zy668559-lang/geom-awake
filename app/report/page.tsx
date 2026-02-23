@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Calendar, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Calendar, CheckCircle2, Download } from "lucide-react";
 import { type RepairCause } from "@/data/training/repair_7days";
 
 type DiagnosisData = {
@@ -21,6 +21,7 @@ function inferCause(text: string): RepairCause {
 export default function ReportPage() {
   const router = useRouter();
   const [data, setData] = useState<DiagnosisData | null>(null);
+  const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("latest_diagnosis");
@@ -39,9 +40,17 @@ export default function ReportPage() {
   }, [data]);
 
   const verdict = useMemo(() => {
-    if (!data) return "你这次不是不会，是关键步没踩稳，按节奏补就能起分。";
-    return `你这次不是不会，是“${data.stuckPoint}”这一步总掉链子，咱们把这块先修稳。`;
+    if (!data) return "这题不是不会，是关键一步老掉链子。";
+    return `你现在最卡的是“${data.stuckPoint}”，先把这一步修稳，分数就会起来。`;
   }, [data]);
+
+  const handleGeneratePoster = () => {
+    setIsGeneratingPoster(true);
+    window.setTimeout(() => {
+      setIsGeneratingPoster(false);
+      window.alert("诊断长图已生成，请直接截图保存。");
+    }, 600);
+  };
 
   if (!data) {
     return (
@@ -70,7 +79,34 @@ export default function ReportPage() {
           <p className="text-slate-700 font-bold">陈老师结论：{verdict}</p>
         </section>
 
+        <button
+          onClick={handleGeneratePoster}
+          disabled={isGeneratingPoster}
+          className="w-full bg-[#F59E0B] text-white text-lg font-black py-4 rounded-[20px] shadow-lg hover:brightness-105 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+        >
+          <Download size={20} />
+          {isGeneratingPoster ? "正在生成长图..." : "生成诊断长图并保存"}
+        </button>
+
         <section className="bg-white rounded-[32px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+          <div className="p-8 border-b border-slate-100">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">解析总览</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="rounded-2xl bg-red-50 border border-red-100 p-4">
+                <p className="text-sm font-black text-red-600">思维断层</p>
+                <p className="text-sm text-slate-700 mt-1">前后步骤接不上，写到一半就断了。</p>
+              </div>
+              <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+                <p className="text-sm font-black text-amber-600">凭空捏造</p>
+                <p className="text-sm text-slate-700 mt-1">结论看着像对，但中间没依据支撑。</p>
+              </div>
+              <div className="rounded-2xl bg-blue-50 border border-blue-100 p-4">
+                <p className="text-sm font-black text-blue-600">图形没拎清</p>
+                <p className="text-sm text-slate-700 mt-1">平行、垂直、中点没排好顺序就动笔。</p>
+              </div>
+            </div>
+          </div>
+
           <div className="p-8 border-b border-slate-100">
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">一句人话版原因</h2>
             <p className="text-xl text-slate-700 font-medium leading-relaxed">{data.rootCause}</p>

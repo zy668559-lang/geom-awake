@@ -1,16 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, ChevronLeft, Loader2, Send } from "lucide-react";
+import { Camera, ChevronLeft, Loader2, Send, X } from "lucide-react";
 
 export default function SubmitPage() {
     const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [stuckPoint, setStuckPoint] = useState("不知道怎么开始");
     const [content, setContent] = useState("");
     const [statusMsg, setStatusMsg] = useState("");
     const [retryCount, setRetryCount] = useState(0);
+    const [draftImageUrl, setDraftImageUrl] = useState<string | null>(null);
+    const [draftImageName, setDraftImageName] = useState("");
     const submitLockRef = useRef(false);
 
     // Hash of the last successful submission to prevent duplicate requests.
@@ -25,6 +28,31 @@ export default function SubmitPage() {
     ];
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    useEffect(() => {
+        return () => {
+            if (draftImageUrl) URL.revokeObjectURL(draftImageUrl);
+        };
+    }, [draftImageUrl]);
+
+    const handleDraftSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (draftImageUrl) URL.revokeObjectURL(draftImageUrl);
+        const nextUrl = URL.createObjectURL(file);
+        setDraftImageUrl(nextUrl);
+        setDraftImageName(file.name);
+    };
+
+    const handleClearDraft = () => {
+        if (draftImageUrl) URL.revokeObjectURL(draftImageUrl);
+        setDraftImageUrl(null);
+        setDraftImageName("");
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
 
     const handleSubmit = async () => {
         if (isLoading || submitLockRef.current) return;
@@ -132,10 +160,52 @@ export default function SubmitPage() {
                         拍个照，或者写下你的进度
                     </h2>
 
-                    <div className="aspect-video bg-slate-50 border-4 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center text-slate-300 hover:text-slate-400 hover:border-slate-300 transition-all cursor-pointer group">
-                        <Camera size={48} className="mb-4 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold">点击拍照上传草稿页</span>
-                    </div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleDraftSelect}
+                    />
+
+                    {!draftImageUrl ? (
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-video bg-slate-50 border-4 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center text-slate-300 hover:text-slate-400 hover:border-slate-300 transition-all cursor-pointer group"
+                        >
+                            <Camera size={48} className="mb-4 group-hover:scale-110 transition-transform" />
+                            <span className="font-bold">点击拍照上传草稿页</span>
+                        </button>
+                    ) : (
+                        <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 p-3">
+                            <div className="relative w-full aspect-video rounded-[20px] overflow-hidden bg-black/5">
+                                <img
+                                    src={draftImageUrl}
+                                    alt="草稿页预览"
+                                    className="w-full h-full object-cover"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleClearDraft}
+                                    className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center"
+                                    aria-label="删除草稿图"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between gap-3">
+                                <p className="text-sm text-slate-500 truncate">已选择：{draftImageName || "草稿页图片"}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="px-4 py-2 text-sm font-bold bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
+                                >
+                                    重新选择
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <textarea
                         placeholder="或者直接在这里写下你的思路..."

@@ -37,15 +37,14 @@
   - Disable analyze retry/cache by removing helper functions in `app/api/analyze/route.ts`.
   - Restore previous submit page behavior by reverting `app/repair/submit/page.tsx` and deleting result page.
 - **Execution Notes**:
-  - `3000` 宸插浐瀹氬崟鐩戝惉锛宍tests/diagnostic.spec.ts` 宸插崌绾у苟閫氳繃锛圕hromium锛夈€?  - `/api/analyze` 宸插姞鍏ュ彲瑙ｉ噴閲嶈瘯閫€閬裤€佸悓杞借嵎骞跺彂鍚堝苟銆乀TL 缂撳瓨鍛戒腑鏃ュ織銆?  - MVP2 澹冲瓙闂幆宸叉墦閫氬埌鐙珛缁撴灉椤?`/repair/submit/result`銆?
-## T-202 7澶╀慨澶嶅唴瀹瑰寘
-- **Status**: Completed
+  - `3000` 瀹告彃娴愮€规艾宕熼惄鎴濇儔閿涘畭tests/diagnostic.spec.ts` 瀹告彃宕岀痪褍鑻熼柅姘崇箖閿涘湑hromium閿涘鈧?  - `/api/analyze` 瀹告彃濮為崗銉ュ讲鐟欙綁鍣撮柌宥堢槸闁偓闁￥鈧礁鎮撴潪鍊熷祹楠炶泛褰傞崥鍫濊嫙閵嗕箑TL 缂傛挸鐡ㄩ崨鎴掕厬閺冦儱绻旈妴?  - MVP2 婢瑰啿鐡欓梻顓犲箚瀹稿弶澧﹂柅姘煂閻欘剛鐝涚紒鎾寸亯妞?`/repair/submit/result`閵?
+## T-202 7婢垛晙鎱ㄦ径宥呭敶鐎圭懓瀵?- **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 灏?MVP2 琛ュ己涓哄彲鍞崠鈥滀氦浠橀棴鐜€濓細鍐呭鍙氦浠樸€佸妫€鏍囩绋冲畾銆佹敮鎸佹棤 API 婕旂ず妯″紡銆?- **Change Points**:
-  - 琛ラ綈涓夋潯閿欏洜绾垮悇 7 澶╁唴瀹癸紝娓呯┖鍗犱綅鏂囨锛岀粺涓€鍙ｈ鍖栭鏍笺€?  - 淇澶嶆鏍囩浼犻€掗摼璺紝纭繚 `/retest/result` 涓嶅嚭鐜扳€滄湭鎸囧畾閿欏洜鈥濄€?  - 澧炲姞 `/processing?demo=1` 鏈湴澶瑰叿妯″紡锛岃烦杩囨ā鍨嬭皟鐢ㄥ畬鎴愭紨绀恒€?- **Not-to-do**:
-  - 涓嶄慨鏀?`/api/analyze`銆?  - 涓嶆柊澧炲閮?API 璋冪敤銆?  - 涓嶆敼璇婃柇璇锋眰娆℃暟绛栫暐锛? click = 1 request锛夈€?- **Acceptance (DoD)**:
-  - 涓夋潯閿欏洜绾?21 澶╁唴瀹瑰叏閮ㄥ彲鐩存帴灞曠ず锛屾棤鍗犱綅瀛楁牱銆?  - 澶嶆娴佺▼淇濈暀閫変腑閿欏洜绾跨洿杈剧粨鏋滈〉锛屾爣绛炬樉绀虹ǔ瀹氥€?  - `?demo=1` 妯″紡涓嶈蛋妯″瀷璇锋眰涔熻兘瀹屾垚婕旂ず闂幆銆?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缁х画 PASS銆?- **Impacted Files**:
+  - 鐏?MVP2 鐞涖儱宸辨稉鍝勫讲閸烆喖宕犻垾婊€姘︽禒姗€妫撮悳顖椻偓婵撶窗閸愬懎顔愰崣顖欐唉娴犳ǜ鈧礁顦插Λ鈧弽鍥╊劮缁嬪啿鐣鹃妴浣规暜閹镐焦妫?API 濠曟梻銇氬Ο鈥崇础閵?- **Change Points**:
+  - 鐞涖儵缍堟稉澶嬫蒋闁挎瑥娲滅痪鍨倗 7 婢垛晛鍞寸€圭櫢绱濆〒鍛敄閸楃姳缍呴弬鍥攳閿涘瞼绮烘稉鈧崣锝堫嚔閸栨牠顥撻弽绗衡偓?  - 娣囶喗顒滄径宥嗩梾閺嶅洨顒锋导鐘烩偓鎺楁懠鐠侯垽绱濈涵顔荤箽 `/retest/result` 娑撳秴鍤悳鎵斥偓婊勬弓閹稿洤鐣鹃柨娆忔礈閳ユ縿鈧?  - 婢х偛濮?`/processing?demo=1` 閺堫剙婀存径鐟板徔濡€崇础閿涘矁鐑︽潻鍥侀崹瀣殶閻劌鐣幋鎰川缁€鎭掆偓?- **Not-to-do**:
+  - 娑撳秳鎱ㄩ弨?`/api/analyze`閵?  - 娑撳秵鏌婃晶鐐差樆闁?API 鐠嬪啰鏁ら妴?  - 娑撳秵鏁肩拠濠冩焽鐠囬攱鐪板▎鈩冩殶缁涙牜鏆愰敍? click = 1 request閿涘鈧?- **Acceptance (DoD)**:
+  - 娑撳娼柨娆忔礈缁?21 婢垛晛鍞寸€圭懓鍙忛柈銊ュ讲閻╁瓨甯寸仦鏇犮仛閿涘本妫ら崡鐘辩秴鐎涙鐗遍妴?  - 婢跺秵顥呭ù浣衡柤娣囨繄鏆€闁鑵戦柨娆忔礈缁捐法娲挎潏鍓х波閺嬫粓銆夐敍灞剧垼缁涚偓妯夌粈铏骨旂€规哎鈧?  - `?demo=1` 濡€崇础娑撳秷铔嬪Ο鈥崇€风拠閿嬬湴娑旂喕鍏樼€瑰本鍨氬鏃傘仛闂傤厾骞嗛妴?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缂佈呯敾 PASS閵?- **Impacted Files**:
   - `data/training/repair_7days.ts`
   - `app/processing/page.tsx`
   - `app/retest/page.tsx`
@@ -54,13 +53,13 @@
   - `docs/PRD.md`
   - `docs/TASKS.md`
 
-## T-203 澶嶆瀵规瘮+缁垂鍏ュ彛
+## T-203 婢跺秵顥呯€佃鐦?缂侇叀鍨傞崗銉ュ經
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 鎶婂妫€鍋氭垚鍙氦浠橀潤鎬侀棴鐜細鎸夐敊鍥犵嚎閫夋嫨 6 棰樸€佸墠绔湰鍦板垽瀹氥€佺粨鏋滈〉缁欏嚭鍛戒腑鐜囧拰鍘诲悜寤鸿銆?- **Change Points**:
-  - 鏂板/琛ュ叏 `data/retest_6q.ts` 闈欐€侀鍖咃紙3 鏉￠敊鍥犵嚎锛屽悇 6 棰橈級銆?  - 姣忛鍖呭惈锛氶骞层€侀€夐」銆佹纭」銆侀敊鍥犺В閲婁竴鍙ヨ瘽銆?  - `/retest` 鏀寔锛氶€夐敊鍥犵嚎 -> 绛旈 -> 鏈湴鍒ゅ畾 -> 璺宠浆缁撴灉椤点€?  - `/retest/result` 灞曠ず锛氬懡涓巼 + 寤鸿锛堝啀缁冧竴杞?/ 杩涘叆 upsell锛夈€?- **Acceptance (DoD)**:
-  - 鍏ㄦ祦绋嬩笉鏂板澶栭儴 API 璋冪敤銆?  - 涓嶆敼 `/api/analyze` 鍜岃瘖鏂姹傛鏁扮瓥鐣ャ€?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缁х画 PASS銆?- **Impacted Files**:
+  - 閹跺﹤顦插Λ鈧崑姘灇閸欘垯姘︽禒姗€娼ら幀渚€妫撮悳顖ょ窗閹稿鏁婇崶鐘靛殠闁瀚?6 妫版ǜ鈧礁澧犵粩顖涙拱閸︽澘鍨界€规哎鈧胶绮ㄩ弸婊堛€夌紒娆忓毉閸涙垝鑵戦悳鍥ф嫲閸樿鎮滃楦款唴閵?- **Change Points**:
+  - 閺傛澘顤?鐞涖儱鍙?`data/retest_6q.ts` 闂堟瑦鈧線顣介崠鍜冪礄3 閺夛繝鏁婇崶鐘靛殠閿涘苯鎮?6 妫版﹫绱氶妴?  - 濮ｅ繘顣介崠鍛儓閿涙岸顣介獮灞傗偓渚€鈧銆嶉妴浣诡劀绾噣銆嶉妴渚€鏁婇崶鐘盒掗柌濠佺閸欍儴鐦介妴?  - `/retest` 閺€顖涘瘮閿涙岸鈧鏁婇崶鐘靛殠 -> 缁涙棃顣?-> 閺堫剙婀撮崚銈呯暰 -> 鐠哄疇娴嗙紒鎾寸亯妞ょ偣鈧?  - `/retest/result` 鐏炴洜銇氶敍姘嚒娑擃厾宸?+ 瀵ら缚顔呴敍鍫濆晙缂佸啩绔存潪?/ 鏉╂稑鍙?upsell閿涘鈧?- **Acceptance (DoD)**:
+  - 閸忋劍绁︾粙瀣╃瑝閺傛澘顤冩径鏍劥 API 鐠嬪啰鏁ら妴?  - 娑撳秵鏁?`/api/analyze` 閸滃矁鐦栭弬顓☆嚞濮瑰倹顐奸弫鎵摜閻ｃ儯鈧?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缂佈呯敾 PASS閵?- **Impacted Files**:
   - `data/retest_6q.ts`
   - `app/retest/page.tsx`
   - `app/retest/result/page.tsx`
@@ -71,9 +70,9 @@
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 鎵撻€氣€滄姤鍛婇〉 -> 瑙ｉ攣椤?-> 7澶╀慨澶嶁€濈殑闂幆鍏ュ彛銆?- **Change Points**:
-  - 鎶ュ憡椤靛鍔犲叆鍙ｆ寜閽€滃紑濮?澶╀慨澶嶁€濄€?  - 鍏ュ彛閫昏緫锛氭湭瑙ｉ攣璺?`/unlock?next=/repair`锛涘凡瑙ｉ攣鐩磋揪 `/repair`銆?  - 瑙ｉ攣椤垫敮鎸?`next` 鍙傛暟锛岃В閿佹垚鍔熻嚜鍔ㄥ洖璺炽€?- **Acceptance (DoD)**:
-  - 鎶ュ憡椤电偣鍑烩€滃紑濮?澶╀慨澶嶁€濇寜瑙ｉ攣鐘舵€佹纭垎娴併€?  - 瑙ｉ攣鎴愬姛鍚庤嚜鍔ㄥ洖鍒?`next`锛堥粯璁?`/repair`锛夈€?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缁х画 PASS銆?- **Impacted Files**:
+  - 閹垫捇鈧埃鈧粍濮ら崨濠囥€?-> 鐟欙綁鏀ｆい?-> 7婢垛晙鎱ㄦ径宥佲偓婵堟畱闂傤厾骞嗛崗銉ュ經閵?- **Change Points**:
+  - 閹躲儱鎲℃い闈涱杻閸旂姴鍙嗛崣锝嗗瘻闁筋喒鈧粌绱戞慨?婢垛晙鎱ㄦ径宥佲偓婵勨偓?  - 閸忋儱褰涢柅鏄忕帆閿涙碍婀憴锝夋敚鐠?`/unlock?next=/repair`閿涙稑鍑＄憴锝夋敚閻╃鎻?`/repair`閵?  - 鐟欙綁鏀ｆい鍨暜閹?`next` 閸欏倹鏆熼敍宀冃掗柨浣瑰灇閸旂喕鍤滈崝銊ユ礀鐠虹偨鈧?- **Acceptance (DoD)**:
+  - 閹躲儱鎲℃い鐢靛仯閸戠儵鈧粌绱戞慨?婢垛晙鎱ㄦ径宥佲偓婵囧瘻鐟欙綁鏀ｉ悩鑸碘偓浣诡劀绾喖鍨庡ù浣碘偓?  - 鐟欙綁鏀ｉ幋鎰閸氬氦鍤滈崝銊ユ礀閸?`next`閿涘牓绮拋?`/repair`閿涘鈧?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缂佈呯敾 PASS閵?- **Impacted Files**:
   - `app/report/page.tsx`
   - `app/unlock/page.tsx`
   - `docs/PRD.md`
@@ -105,3 +104,31 @@
   - `app/repair/submit/page.tsx`
   - `lib/repair-submit-local.ts`
   - `tests/repair-content.sanity.spec.ts`
+
+## T-UPS-001 Sellable copy + upsell conversion form
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - Make `/retest/result` and `/report` copy sellable with clear next-step CTAs.
+  - Implement `/upsell` packages and local conversion form flow (`/upsell/submit`) without payment/backend.
+- **Scope**:
+  - Rewrite verdict copy to one short sentence in Chen-teacher tone.
+  - Add two buttons: `鍐嶇粌涓€杞甡 and `鎶婂垎鏁扮ǔ浣廯 on result/report pages.
+  - Build Package A (楼199) and Package B (楼599) cards with fixed deliverables.
+  - Add local form fields: 瀹堕暱绉板懠 / 瀛╁瓙骞寸骇 / 鍦板尯 / 寰俊鍙锋垨鎵嬫満鍙?/ 褰撳墠鍒嗘暟(閫夊～) / 涓昏鍗＄偣.
+  - Persist submission in `localStorage` and show deterministic instruction text.
+- **Out of Scope**:
+  - No payment integration.
+  - No DB persistence.
+  - No new external API call and no `/api/analyze` changes.
+- **Acceptance Checklist**:
+  - `/retest/result` and `/report` both show one-sentence verdict + two CTA buttons.
+  - `/upsell` shows Package A/B details and routes to local form via `鎴戦€堿 / 鎴戦€塀`.
+  - `/upsell/submit` saves local data and shows next-step instruction; `diagnostic.spec.ts` stays PASS.
+- **Impacted Files**:
+  - `app/retest/result/page.tsx`
+  - `app/report/page.tsx`
+  - `app/upsell/page.tsx`
+  - `app/upsell/submit/page.tsx`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`

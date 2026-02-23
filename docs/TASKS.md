@@ -132,3 +132,28 @@
   - `app/upsell/submit/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
+
+## T-BIZ-002 人性化与商业化 UI 重构
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - 用更口语化、更直接的表达提升价格页和小测结果页转化。
+  - 增加即时反馈与推荐弹窗，缩短从“看到问题”到“点行动按钮”的路径。
+- **Scope**:
+  - `app/pricing/page.tsx`: 199/599 套餐文案重写，199 加 `HOT 推荐` 角标，599 强调 `真人复核` 与 `提分保险`。
+  - `app/retest/page.tsx`: 选项点击后即时展示结果图与一句话点评；底部增加“深度 AI 诊断”钩子。
+  - `app/retest/page.tsx`: Modal 文案压缩为三行，主按钮改亮橙并改文案为“获取我的专属开窍路书”。
+  - `app/retest/result/page.tsx`: 统一口语化结果页文案。
+- **Out of Scope**:
+  - 不改 `/api/analyze`。
+  - 不新增外部 API。
+- **3-step Acceptance**:
+  - 打开 `/pricing`：看见 `HOT 推荐` 角标、199 的“专治...”文案，599 明确出现“真人复核”“提分保险”。
+  - 打开 `/retest`：任意点一个选项即出现“即时结果图 + 一句话点评”；底部有“深度 AI 诊断”钩子。
+  - 点击“深度 AI 诊断”打开推荐弹窗：只显示三行短句，主按钮为亮橙色“获取我的专属开窍路书”。
+- **Impacted Files**:
+  - `app/pricing/page.tsx`
+  - `app/retest/page.tsx`
+  - `app/retest/result/page.tsx`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`

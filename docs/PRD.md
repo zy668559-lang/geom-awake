@@ -86,3 +86,15 @@
   - Keep diagnosis network invariant and `diagnostic.spec.ts` passing.
 - **Why**:
   - Close MVP2 monetization handoff with deterministic local flow and clear CTA copy that can be demoed immediately.
+
+### 2026-02-23 - T-BIZ-002 Humanized commercial UI revamp
+- **Do**:
+  - Refactor `pricing` package copy to direct parent-facing language; add clear hot badge and stronger high-ticket value proposition.
+  - Upgrade static retest interaction with instant result panel after option selection, one-line comment, and explicit deep-diagnosis hook.
+  - Rebuild recommendation modal into three short lines + highly visible primary CTA.
+- **Do not**:
+  - Do not modify `/api/analyze`.
+  - Do not introduce external API calls.
+  - Keep diagnosis one-click one-request stability.
+- **Why**:
+  - Increase conversion clarity and reduce cognitive load so parents can understand value and next action immediately.

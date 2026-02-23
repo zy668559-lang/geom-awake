@@ -34,8 +34,8 @@ export default function RetestResultPage() {
   const hitRate = Number.parseInt(searchParams.get("hitRate") || "0", 10);
   const fixed = searchParams.get("fixed") === "1";
   const verdict = fixed
-    ? "这块已经稳住了，接下来把分数守住就行。"
-    : "这块还没彻底稳，先再练一轮马上会好很多。";
+    ? "你这块已经稳住了，接下来守分就行。"
+    : "你这块还在晃，先再练一轮马上会更稳。";
   const wrongReasonsRaw = searchParams.get("wrongReasons") || "";
 
   const wrongReasons = useMemo(() => {
@@ -51,9 +51,9 @@ export default function RetestResultPage() {
           className="flex items-center gap-2 text-slate-400 font-bold hover:text-slate-600 transition-colors"
         >
           <ChevronLeft size={20} />
-          返回复检
+          返回小测
         </button>
-        <span className="mx-auto font-black text-slate-800 text-lg">复检结果</span>
+        <span className="mx-auto font-black text-slate-800 text-lg">小测结果</span>
         <div className="w-12" />
       </nav>
 
@@ -63,7 +63,7 @@ export default function RetestResultPage() {
             {fixed ? <CheckCircle2 className="text-green-500" size={28} /> : <CircleAlert className="text-amber-500" size={28} />}
             <h1 className="text-2xl font-black text-slate-800">{fixed ? "这块基本修住了" : "这块还要再练一轮"}</h1>
           </div>
-          <p className="text-lg text-slate-700">陈老师结论：{verdict}</p>
+          <p className="text-lg text-slate-700">一句话点评：{verdict}</p>
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,7 +95,7 @@ export default function RetestResultPage() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button
-            onClick={() => router.push(`/repair?cause=${cause}`)}
+            onClick={() => router.push(`/retest?cause=${cause}`)}
             className="w-full bg-white border border-slate-200 text-slate-700 text-lg font-bold py-4 rounded-[20px] shadow-sm hover:bg-slate-50 transition-all"
           >
             再练一轮

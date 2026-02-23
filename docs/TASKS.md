@@ -37,29 +37,15 @@
   - Disable analyze retry/cache by removing helper functions in `app/api/analyze/route.ts`.
   - Restore previous submit page behavior by reverting `app/repair/submit/page.tsx` and deleting result page.
 - **Execution Notes**:
-  - `3000` 已固定单监听，`tests/diagnostic.spec.ts` 已升级并通过（Chromium）。
-  - `/api/analyze` 已加入可解释重试退避、同载荷并发合并、TTL 缓存命中日志。
-  - MVP2 壳子闭环已打通到独立结果页 `/repair/submit/result`。
-
-## T-202 7天修复内容包
+  - `3000` 宸插浐瀹氬崟鐩戝惉锛宍tests/diagnostic.spec.ts` 宸插崌绾у苟閫氳繃锛圕hromium锛夈€?  - `/api/analyze` 宸插姞鍏ュ彲瑙ｉ噴閲嶈瘯閫€閬裤€佸悓杞借嵎骞跺彂鍚堝苟銆乀TL 缂撳瓨鍛戒腑鏃ュ織銆?  - MVP2 澹冲瓙闂幆宸叉墦閫氬埌鐙珛缁撴灉椤?`/repair/submit/result`銆?
+## T-202 7澶╀慨澶嶅唴瀹瑰寘
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 将 MVP2 补强为可售卖“交付闭环”：内容可交付、复检标签稳定、支持无 API 演示模式。
-- **Change Points**:
-  - 补齐三条错因线各 7 天内容，清空占位文案，统一口语化风格。
-  - 修正复检标签传递链路，确保 `/retest/result` 不出现“未指定错因”。
-  - 增加 `/processing?demo=1` 本地夹具模式，跳过模型调用完成演示。
-- **Not-to-do**:
-  - 不修改 `/api/analyze`。
-  - 不新增外部 API 调用。
-  - 不改诊断请求次数策略（1 click = 1 request）。
-- **Acceptance (DoD)**:
-  - 三条错因线 21 天内容全部可直接展示，无占位字样。
-  - 复检流程保留选中错因线直达结果页，标签显示稳定。
-  - `?demo=1` 模式不走模型请求也能完成演示闭环。
-  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 继续 PASS。
-- **Impacted Files**:
+  - 灏?MVP2 琛ュ己涓哄彲鍞崠鈥滀氦浠橀棴鐜€濓細鍐呭鍙氦浠樸€佸妫€鏍囩绋冲畾銆佹敮鎸佹棤 API 婕旂ず妯″紡銆?- **Change Points**:
+  - 琛ラ綈涓夋潯閿欏洜绾垮悇 7 澶╁唴瀹癸紝娓呯┖鍗犱綅鏂囨锛岀粺涓€鍙ｈ鍖栭鏍笺€?  - 淇澶嶆鏍囩浼犻€掗摼璺紝纭繚 `/retest/result` 涓嶅嚭鐜扳€滄湭鎸囧畾閿欏洜鈥濄€?  - 澧炲姞 `/processing?demo=1` 鏈湴澶瑰叿妯″紡锛岃烦杩囨ā鍨嬭皟鐢ㄥ畬鎴愭紨绀恒€?- **Not-to-do**:
+  - 涓嶄慨鏀?`/api/analyze`銆?  - 涓嶆柊澧炲閮?API 璋冪敤銆?  - 涓嶆敼璇婃柇璇锋眰娆℃暟绛栫暐锛? click = 1 request锛夈€?- **Acceptance (DoD)**:
+  - 涓夋潯閿欏洜绾?21 澶╁唴瀹瑰叏閮ㄥ彲鐩存帴灞曠ず锛屾棤鍗犱綅瀛楁牱銆?  - 澶嶆娴佺▼淇濈暀閫変腑閿欏洜绾跨洿杈剧粨鏋滈〉锛屾爣绛炬樉绀虹ǔ瀹氥€?  - `?demo=1` 妯″紡涓嶈蛋妯″瀷璇锋眰涔熻兘瀹屾垚婕旂ず闂幆銆?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缁х画 PASS銆?- **Impacted Files**:
   - `data/training/repair_7days.ts`
   - `app/processing/page.tsx`
   - `app/retest/page.tsx`
@@ -68,21 +54,13 @@
   - `docs/PRD.md`
   - `docs/TASKS.md`
 
-## T-203 复检对比+续费入口
+## T-203 澶嶆瀵规瘮+缁垂鍏ュ彛
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 把复检做成可交付静态闭环：按错因线选择 6 题、前端本地判定、结果页给出命中率和去向建议。
-- **Change Points**:
-  - 新增/补全 `data/retest_6q.ts` 静态题包（3 条错因线，各 6 题）。
-  - 每题包含：题干、选项、正确项、错因解释一句话。
-  - `/retest` 支持：选错因线 -> 答题 -> 本地判定 -> 跳转结果页。
-  - `/retest/result` 展示：命中率 + 建议（再练一轮 / 进入 upsell）。
-- **Acceptance (DoD)**:
-  - 全流程不新增外部 API 调用。
-  - 不改 `/api/analyze` 和诊断请求次数策略。
-  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 继续 PASS。
-- **Impacted Files**:
+  - 鎶婂妫€鍋氭垚鍙氦浠橀潤鎬侀棴鐜細鎸夐敊鍥犵嚎閫夋嫨 6 棰樸€佸墠绔湰鍦板垽瀹氥€佺粨鏋滈〉缁欏嚭鍛戒腑鐜囧拰鍘诲悜寤鸿銆?- **Change Points**:
+  - 鏂板/琛ュ叏 `data/retest_6q.ts` 闈欐€侀鍖咃紙3 鏉￠敊鍥犵嚎锛屽悇 6 棰橈級銆?  - 姣忛鍖呭惈锛氶骞层€侀€夐」銆佹纭」銆侀敊鍥犺В閲婁竴鍙ヨ瘽銆?  - `/retest` 鏀寔锛氶€夐敊鍥犵嚎 -> 绛旈 -> 鏈湴鍒ゅ畾 -> 璺宠浆缁撴灉椤点€?  - `/retest/result` 灞曠ず锛氬懡涓巼 + 寤鸿锛堝啀缁冧竴杞?/ 杩涘叆 upsell锛夈€?- **Acceptance (DoD)**:
+  - 鍏ㄦ祦绋嬩笉鏂板澶栭儴 API 璋冪敤銆?  - 涓嶆敼 `/api/analyze` 鍜岃瘖鏂姹傛鏁扮瓥鐣ャ€?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缁х画 PASS銆?- **Impacted Files**:
   - `data/retest_6q.ts`
   - `app/retest/page.tsx`
   - `app/retest/result/page.tsx`
@@ -93,17 +71,37 @@
 - **Status**: Completed
 - **Owner**: Codex
 - **Goal**:
-  - 打通“报告页 -> 解锁页 -> 7天修复”的闭环入口。
-- **Change Points**:
-  - 报告页增加入口按钮“开始7天修复”。
-  - 入口逻辑：未解锁跳 `/unlock?next=/repair`；已解锁直达 `/repair`。
-  - 解锁页支持 `next` 参数，解锁成功自动回跳。
-- **Acceptance (DoD)**:
-  - 报告页点击“开始7天修复”按解锁状态正确分流。
-  - 解锁成功后自动回到 `next`（默认 `/repair`）。
-  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 继续 PASS。
-- **Impacted Files**:
+  - 鎵撻€氣€滄姤鍛婇〉 -> 瑙ｉ攣椤?-> 7澶╀慨澶嶁€濈殑闂幆鍏ュ彛銆?- **Change Points**:
+  - 鎶ュ憡椤靛鍔犲叆鍙ｆ寜閽€滃紑濮?澶╀慨澶嶁€濄€?  - 鍏ュ彛閫昏緫锛氭湭瑙ｉ攣璺?`/unlock?next=/repair`锛涘凡瑙ｉ攣鐩磋揪 `/repair`銆?  - 瑙ｉ攣椤垫敮鎸?`next` 鍙傛暟锛岃В閿佹垚鍔熻嚜鍔ㄥ洖璺炽€?- **Acceptance (DoD)**:
+  - 鎶ュ憡椤电偣鍑烩€滃紑濮?澶╀慨澶嶁€濇寜瑙ｉ攣鐘舵€佹纭垎娴併€?  - 瑙ｉ攣鎴愬姛鍚庤嚜鍔ㄥ洖鍒?`next`锛堥粯璁?`/repair`锛夈€?  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` 缁х画 PASS銆?- **Impacted Files**:
   - `app/report/page.tsx`
   - `app/unlock/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
+
+## T-206 Challenge completion + local submit determinism
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - Complete static challenge content rendering for all causes and days (3 x 7, 2 micro questions per day).
+  - Make `/repair/submit` deterministic local-only and guarantee no hanging submit flow.
+- **Change Points**:
+  - `/repair/day/[id]` renders challenge text directly from static data with `cause + day` mapping.
+  - `/repair/submit` removes API dependency and uses local scoring result card.
+  - Submit result is shown in-page with two action buttons: `Back to training` and `Go to retest`.
+  - Add a small sanity test to verify challenge completeness and local submit evaluation behavior.
+- **Out of Scope**:
+  - No changes to `/api/analyze`.
+  - No new external API calls.
+  - No diagnosis-flow request strategy changes.
+- **Acceptance (DoD)**:
+  - Each `/repair/day/1..7` shows 2 challenge items for each selected cause.
+  - `/repair/submit` always exits loading quickly with deterministic local result card and two next-step buttons.
+  - `npx playwright test tests/diagnostic.spec.ts --project=chromium` remains PASS.
+- **Impacted Files**:
+  - `docs/PRD.md`
+  - `docs/TASKS.md`
+  - `app/repair/day/[id]/page.tsx`
+  - `app/repair/submit/page.tsx`
+  - `lib/repair-submit-local.ts`
+  - `tests/repair-content.sanity.spec.ts`

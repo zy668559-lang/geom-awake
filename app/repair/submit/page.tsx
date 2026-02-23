@@ -1,243 +1,266 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Camera, ChevronLeft, Loader2, Send, X } from "lucide-react";
+import { getRepairPack, isRepairCause, type RepairCause } from "@/data/training/repair_7days";
+import { evaluateRepairSubmit, type LocalSubmitResult } from "@/lib/repair-submit-local";
+
+const STUCK_POINTS = ["不知道怎么开始", "画不出辅助线", "关系总是写乱", "证明写到一半卡住", "最后一步总掉链子"];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export default function SubmitPage() {
-    const router = useRouter();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [stuckPoint, setStuckPoint] = useState("不知道怎么开始");
-    const [content, setContent] = useState("");
-    const [statusMsg, setStatusMsg] = useState("");
-    const [retryCount, setRetryCount] = useState(0);
-    const [draftImageUrl, setDraftImageUrl] = useState<string | null>(null);
-    const [draftImageName, setDraftImageName] = useState("");
-    const submitLockRef = useRef(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitLockRef = useRef(false);
 
-    // Hash of the last successful submission to prevent duplicate requests.
-    const lastSubmissionHash = useRef("");
+  const queryCause = searchParams.get("cause");
+  const cachedCause = typeof window !== "undefined" ? localStorage.getItem("repair_selected_cause") : null;
+  const selectedCause: RepairCause = isRepairCause(queryCause)
+    ? queryCause
+    : isRepairCause(cachedCause)
+      ? cachedCause
+      : "draw_line";
 
-    const STUCK_POINTS = [
-        "不知道怎么开始",
-        "画不出辅助线",
-        "看不出图形关系",
-        "写到一半卡住了",
-        "算不出最后结果",
-    ];
+  const dayFromQuery = Number(searchParams.get("day") || "1");
+  const dayId = Number.isFinite(dayFromQuery) && dayFromQuery >= 1 && dayFromQuery <= 7 ? dayFromQuery : 1;
 
-    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const [isLoading, setIsLoading] = useState(false);
+  const [stuckPoint, setStuckPoint] = useState(STUCK_POINTS[0]);
+  const [content, setContent] = useState("");
+  const [draftImageUrl, setDraftImageUrl] = useState<string | null>(null);
+  const [draftImageName, setDraftImageName] = useState("");
+  const [result, setResult] = useState<LocalSubmitResult | null>(null);
+  const [elapsedMs, setElapsedMs] = useState<number | null>(null);
 
-    useEffect(() => {
-        return () => {
-            if (draftImageUrl) URL.revokeObjectURL(draftImageUrl);
-        };
-    }, [draftImageUrl]);
+  const currentPack = useMemo(() => getRepairPack(selectedCause), [selectedCause]);
+  const dayContent = currentPack.days.find((item) => item.day === dayId) || currentPack.days[0];
 
-    const handleDraftSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  useEffect(() => {
+    localStorage.setItem("repair_selected_cause", selectedCause);
+  }, [selectedCause]);
 
-        if (draftImageUrl) URL.revokeObjectURL(draftImageUrl);
-        const nextUrl = URL.createObjectURL(file);
-        setDraftImageUrl(nextUrl);
-        setDraftImageName(file.name);
+  useEffect(() => {
+    return () => {
+      if (draftImageUrl) {
+        URL.revokeObjectURL(draftImageUrl);
+      }
     };
+  }, [draftImageUrl]);
 
-    const handleClearDraft = () => {
-        if (draftImageUrl) URL.revokeObjectURL(draftImageUrl);
-        setDraftImageUrl(null);
-        setDraftImageName("");
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
+  const handleDraftSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const handleSubmit = async () => {
-        if (isLoading || submitLockRef.current) return;
+    if (draftImageUrl) {
+      URL.revokeObjectURL(draftImageUrl);
+    }
 
-        const currentHash = JSON.stringify({ stuckPoint, content });
-        if (lastSubmissionHash.current === currentHash) {
-            console.log("[Client] Idempotent: Same content as before, skipping request.");
-            return;
-        }
+    setDraftImageUrl(URL.createObjectURL(file));
+    setDraftImageName(file.name);
+    setResult(null);
+    setElapsedMs(null);
+  };
 
-        submitLockRef.current = true;
-        setIsLoading(true);
-        setStatusMsg("正在交给陈老师判定...");
+  const handleClearDraft = () => {
+    if (draftImageUrl) {
+      URL.revokeObjectURL(draftImageUrl);
+    }
 
-        const submissionId = btoa(currentHash).slice(0, 16);
+    setDraftImageUrl(null);
+    setDraftImageName("");
+    setResult(null);
+    setElapsedMs(null);
 
-        try {
-            const maxRetries = 3;
-            let attempt = 0;
-            let response: Response;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
-            while (true) {
-                response = await fetch("/api/repair/submit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ submissionId, stuckPoint, content }),
-                });
+  const handleSubmit = async () => {
+    if (isLoading || submitLockRef.current) {
+      return;
+    }
 
-                if (response.status !== 429) break;
-                if (attempt >= maxRetries) {
-                    throw new Error("陈老师今天太累了，请稍后再试（请求过多）");
-                }
+    submitLockRef.current = true;
+    setIsLoading(true);
 
-                const waitTime = 2 ** attempt * 1000;
-                attempt += 1;
-                setRetryCount(attempt);
-                setStatusMsg(
-                    `陈老师正在思考中，稍微等我 ${waitTime / 1000} 秒钟...（重试 ${attempt}/${maxRetries}）`
-                );
-                console.warn(`[Client] 429 Detected. Retrying in ${waitTime}ms... (Attempt ${attempt}/${maxRetries})`);
-                await sleep(waitTime);
-            }
+    const startedAt = Date.now();
 
-            if (!response!.ok) throw new Error("服务器出了点小差错，陈老师还在修。");
+    try {
+      const localResult = evaluateRepairSubmit({
+        cause: selectedCause,
+        dayId,
+        stuckPoint,
+        content,
+        hasDraftImage: Boolean(draftImageUrl),
+      });
 
-            const data = await response!.json();
-            lastSubmissionHash.current = currentHash;
-            setRetryCount(0);
-            setStatusMsg("");
+      // Keep UI feedback quick and deterministic. Submit is guaranteed to resolve under 2s.
+      await sleep(600);
 
-            const search = new URLSearchParams({
-                passed: data.key_steps_appeared ? "1" : "0",
-                next: data.next_action || "保持复盘，继续推进下一题。",
-                retries: String(attempt),
-            });
-            router.push(`/repair/submit/result?${search.toString()}`);
-        } catch (err: any) {
-            console.error("[Client] Submit Error:", err);
-            alert(err.message);
-        } finally {
-            setIsLoading(false);
-            submitLockRef.current = false;
-        }
-    };
+      const total = Date.now() - startedAt;
+      setResult(localResult);
+      setElapsedMs(total);
+      console.info(`[repair-submit] local result ready in ${total}ms`, {
+        cause: selectedCause,
+        dayId,
+        score: localResult.score,
+        passed: localResult.passed,
+      });
+    } finally {
+      setIsLoading(false);
+      submitLockRef.current = false;
+    }
+  };
 
-    return (
-        <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
-            <nav className="p-6 flex items-center bg-white shadow-sm">
+  return (
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
+      <nav className="p-6 flex items-center bg-white shadow-sm">
+        <button
+          onClick={() => router.push(`/repair/day/${dayId}?cause=${selectedCause}`)}
+          className="flex items-center gap-2 text-slate-400 font-bold hover:text-slate-600 transition-colors"
+        >
+          <ChevronLeft size={20} />
+          返回 Day {dayId}
+        </button>
+        <span className="mx-auto font-black text-slate-800 text-lg">提交反馈</span>
+        <div className="w-16" />
+      </nav>
+
+      <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-6 pb-24">
+        <section className="bg-white rounded-[32px] p-8 shadow-sm">
+          <p className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-3">当前训练</p>
+          <h1 className="text-xl font-black text-slate-800">{currentPack.label} · Day {dayId}</h1>
+          <p className="text-slate-500 mt-2">今日口令：{dayContent.command}</p>
+        </section>
+
+        <section className="bg-white rounded-[32px] p-8 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-6 text-center">你现在最卡哪一步？</h2>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {STUCK_POINTS.map((point) => (
+              <button
+                key={point}
+                type="button"
+                onClick={() => {
+                  setStuckPoint(point);
+                  setResult(null);
+                  setElapsedMs(null);
+                }}
+                className={`px-6 py-3 rounded-2xl font-bold transition-all ${
+                  stuckPoint === point ? "bg-[#667EEA] text-white shadow-md scale-105" : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {point}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-white rounded-[32px] p-8 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-6 text-center">拍照上传草稿页</h2>
+
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleDraftSelect} />
+
+          {!draftImageUrl ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full aspect-video bg-slate-50 border-4 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center text-slate-400 hover:text-slate-500 hover:border-slate-300 transition-all cursor-pointer group"
+            >
+              <Camera size={48} className="mb-4 group-hover:scale-110 transition-transform" />
+              <span className="font-bold">点击上传草稿页</span>
+            </button>
+          ) : (
+            <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 p-3">
+              <div className="relative w-full aspect-video rounded-[20px] overflow-hidden bg-black/5">
+                <img src={draftImageUrl} alt="草稿页预览" className="w-full h-full object-cover" />
                 <button
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 text-slate-400 font-bold hover:text-slate-600 transition-colors"
+                  type="button"
+                  onClick={handleClearDraft}
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center"
+                  aria-label="删除草稿图"
                 >
-                    <ChevronLeft size={20} />
-                    返回
+                  <X size={18} />
                 </button>
-                <span className="mx-auto font-black text-slate-800 text-lg">提交反馈</span>
-                <div className="w-12" />
-            </nav>
-
-            <main className="flex-1 max-w-2xl mx-auto w-full p-6 space-y-6 pb-24">
-                <section className="bg-white rounded-[32px] p-8 shadow-sm">
-                    <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-6 text-center">
-                        你现在卡在哪了？
-                    </h2>
-                    <div className="flex flex-wrap gap-3 justify-center">
-                        {STUCK_POINTS.map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => setStuckPoint(p)}
-                                className={`
-                                    px-6 py-3 rounded-2xl font-bold transition-all
-                                    ${stuckPoint === p
-                                        ? "bg-[#667EEA] text-white shadow-md scale-105"
-                                        : "bg-slate-50 text-slate-400 hover:bg-slate-100"}
-                                `}
-                            >
-                                {p}
-                            </button>
-                        ))}
-                    </div>
-                </section>
-
-                <section className="bg-white rounded-[32px] p-8 shadow-sm">
-                    <h2 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-6 text-center">
-                        拍个照，或者写下你的进度
-                    </h2>
-
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleDraftSelect}
-                    />
-
-                    {!draftImageUrl ? (
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="w-full aspect-video bg-slate-50 border-4 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center text-slate-300 hover:text-slate-400 hover:border-slate-300 transition-all cursor-pointer group"
-                        >
-                            <Camera size={48} className="mb-4 group-hover:scale-110 transition-transform" />
-                            <span className="font-bold">点击拍照上传草稿页</span>
-                        </button>
-                    ) : (
-                        <div className="w-full rounded-[24px] border border-slate-200 bg-slate-50 p-3">
-                            <div className="relative w-full aspect-video rounded-[20px] overflow-hidden bg-black/5">
-                                <img
-                                    src={draftImageUrl}
-                                    alt="草稿页预览"
-                                    className="w-full h-full object-cover"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleClearDraft}
-                                    className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center"
-                                    aria-label="删除草稿图"
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between gap-3">
-                                <p className="text-sm text-slate-500 truncate">已选择：{draftImageName || "草稿页图片"}</p>
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="px-4 py-2 text-sm font-bold bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
-                                >
-                                    重新选择
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <textarea
-                        placeholder="或者直接在这里写下你的思路..."
-                        className="w-full mt-6 bg-slate-50 border-2 border-transparent focus:border-[#667EEA] focus:bg-white rounded-2xl p-6 h-32 outline-none font-medium text-slate-700 transition-all"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                    />
-                </section>
-
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-slate-500 truncate">已选择：{draftImageName || "草稿页图片"}</p>
                 <button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className={`
-                        w-full py-6 rounded-[24px] text-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2
-                        ${isLoading
-                            ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                            : "bg-[#1A1A1A] text-white hover:scale-[1.02] active:scale-[0.98]"}
-                    `}
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 text-sm font-bold bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
                 >
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="animate-spin" size={24} />
-                            <span>{statusMsg || "正在提交..."}</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>陈老师，帮我看看</span>
-                            <Send size={20} />
-                        </>
-                    )}
+                  重新选择
                 </button>
-            </main>
-        </div>
-    );
+              </div>
+            </div>
+          )}
+
+          <textarea
+            placeholder="或者直接写下你的思路，比如：先连哪条线、用了哪个条件。"
+            className="w-full mt-6 bg-slate-50 border-2 border-transparent focus:border-[#667EEA] focus:bg-white rounded-2xl p-6 h-32 outline-none font-medium text-slate-700 transition-all"
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              setResult(null);
+              setElapsedMs(null);
+            }}
+          />
+        </section>
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className={`w-full py-6 rounded-[24px] text-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${
+            isLoading ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-[#1A1A1A] text-white hover:scale-[1.02] active:scale-[0.98]"
+          }`}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" size={24} />
+              <span>正在本地判定（不走接口）...</span>
+            </>
+          ) : (
+            <>
+              <span>提交反馈</span>
+              <Send size={20} />
+            </>
+          )}
+        </button>
+
+        {result ? (
+          <section className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100">
+            <h2 className="text-2xl font-black text-slate-800 mb-2">{result.verdictTitle}</h2>
+            <p className="text-slate-600">本地得分：{result.score} / 100</p>
+            <p className="text-slate-600 mt-2">建议：{result.coachTip}</p>
+            <p className="text-slate-500 mt-2">下一步：{result.nextAction}</p>
+            <p className="text-xs text-slate-400 mt-3">提交耗时：{elapsedMs ?? 0}ms（目标 ≤ 2000ms）</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => router.push(`/repair/day/${dayId}?cause=${selectedCause}`)}
+                className="py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
+              >
+                Back to training
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/retest?cause=${selectedCause}`)}
+                className="py-4 rounded-2xl bg-[#1A1A1A] text-white font-bold hover:opacity-90 transition-opacity"
+              >
+                Go to retest
+              </button>
+            </div>
+          </section>
+        ) : null}
+      </main>
+    </div>
+  );
 }

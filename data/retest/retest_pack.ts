@@ -201,7 +201,7 @@ const PROOF_WRITING_QUESTIONS: RetestQuestion[] = [
     answerPrompt: "选可继续推进的",
     options: ["回到上一步补依据", "删除整段", "换一种语言描述"],
     correctOption: 0,
-    keyPoint: "卡住多因上一步依据缺失",
+    keyPoint: "卡住多因上一步这里在凭空捏造",
     correctionCommand: "卡住先补依据",
   },
 ];
@@ -219,4 +219,3 @@ export const RETEST_PACKS: Record<RepairCause, RetestPack> = {
 export function getRetestPack(cause: RepairCause): RetestPack {
   return RETEST_PACKS[cause];
 }
-

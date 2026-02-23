@@ -157,3 +157,32 @@
   - `app/retest/result/page.tsx`
   - `docs/PRD.md`
   - `docs/TASKS.md`
+
+## T-BIZ-003 商业化转化逻辑与极致口语化文案重构
+- **Status**: Completed
+- **Owner**: Codex
+- **Goal**:
+  - 把 upsell 与小测结果改成更直接的家长决策文案，减少犹豫。
+- **Scope**:
+  - `app/upsell/page.tsx`：重写 199/599 套餐标题，移除页面中的 `PACKAGE` 字样，新增 599 社会证明亮色文案。
+  - `app/quiz/page.tsx`：补全静态小测结果弹出逻辑，加入 `feedbackText`，错误时显示固定提醒，并给出橙色 CTA“领取完整诊断报告”。
+  - 全局文案：`依据缺失 -> 这里在凭空捏造`，`跳证 -> 思路中间断层了`。
+  - 提交类按钮文案统一为：`好了，陈老师请看诊`。
+- **Out of Scope**:
+  - 不改 `/api/analyze`。
+  - 不新增外部 API。
+- **3-step Acceptance**:
+  - 打开 `/upsell`：确认 199/599 标题按新文案显示，且 599 下出现“已有 1245 位家长...”亮色提示。
+  - 打开 `/quiz`：点任意选项后结果卡立即出现；点错时展示“逻辑断片儿...”文案；下方出现橙色按钮“领取完整诊断报告”。
+  - 搜索文案：项目中原有“依据缺失”“跳证”已替换为“这里在凭空捏造”“思路中间断层了”；提交类按钮显示“好了，陈老师请看诊”。
+- **Impacted Files**:
+  - `app/upsell/page.tsx`
+  - `app/quiz/page.tsx`
+  - `app/retest/page.tsx`
+  - `app/repair/day/[id]/page.tsx`
+  - `app/repair/submit/page.tsx`
+  - `app/upsell/submit/page.tsx`
+  - `data/retest_6q.ts`
+  - `data/retest/retest_pack.ts`
+  - `docs/PRD.md`
+  - `docs/TASKS.md`

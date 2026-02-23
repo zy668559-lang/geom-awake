@@ -140,7 +140,7 @@ const PROOF_WRITING_QUESTIONS: Retest6QQuestion[] = [
     stem: "证明全等前应该先做什么？",
     options: ["列齐三条判定条件", "直接写“全等”", "先求数值"],
     correctOption: 0,
-    wrongReason: "没先列条件就下结论，属于典型跳证。",
+    wrongReason: "没先列条件就下结论，思路中间断层了。",
   },
   {
     id: "PW-4",
@@ -164,7 +164,7 @@ const PROOF_WRITING_QUESTIONS: Retest6QQuestion[] = [
     stem: "写到一半卡住，优先处理方式？",
     options: ["回到上一步补依据", "删除整段", "换一种语言描述"],
     correctOption: 0,
-    wrongReason: "卡住通常是上一步依据缺失，不是重写就能解决。",
+    wrongReason: "卡住通常是上一步这里在凭空捏造，不是重写就能解决。",
   },
 ];
 
@@ -181,4 +181,3 @@ export const RETEST_6Q_PACKS: Record<RepairCause, Retest6QPack> = {
 export function getRetest6QPack(cause: RepairCause): Retest6QPack {
   return RETEST_6Q_PACKS[cause];
 }
-

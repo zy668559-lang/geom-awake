@@ -209,7 +209,7 @@ export default function RetestPage() {
           onClick={handleSubmit}
           className="w-full bg-[#1A1A1A] text-white text-xl font-bold py-5 rounded-[24px] shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
-          提交小测，生成正式结果
+          好了，陈老师请看诊
           <ArrowRight size={20} />
         </button>
       </main>

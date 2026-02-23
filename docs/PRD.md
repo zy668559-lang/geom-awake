@@ -98,3 +98,15 @@
   - Keep diagnosis one-click one-request stability.
 - **Why**:
   - Increase conversion clarity and reduce cognitive load so parents can understand value and next action immediately.
+
+### 2026-02-23 - T-BIZ-003 commercial conversion copy overhaul
+- **Do**:
+  - Rebuild `/upsell` with stronger parent-facing package titles and social-proof line for the high-tier plan.
+  - Add `/quiz` instant-result interaction with `feedbackText` and direct deep-diagnosis CTA.
+  - Unify high-risk wording: `依据缺失 -> 这里在凭空捏造`, `跳证 -> 思路中间断层了`.
+  - Unify submit CTA copy to `好了，陈老师请看诊` on submit-action buttons.
+- **Do not**:
+  - Do not modify `/api/analyze`.
+  - Do not introduce external API calls.
+- **Why**:
+  - Raise commercial conversion clarity with direct language and immediate action prompts.

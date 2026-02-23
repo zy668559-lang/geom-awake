@@ -165,7 +165,7 @@ export default function UpsellSubmitPage() {
             onClick={handleSubmit}
             className="w-full mt-2 bg-[#1A1A1A] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity"
           >
-            提交
+            好了，陈老师请看诊
           </button>
         </section>
 

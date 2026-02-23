@@ -228,7 +228,7 @@ export default function SubmitPage() {
             </>
           ) : (
             <>
-              <span>提交反馈</span>
+              <span>好了，陈老师请看诊</span>
               <Send size={20} />
             </>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Brain, MessageCircle, Search } from "lucide-react";
 
@@ -31,7 +31,7 @@ const DEMO_DIAGNOSIS_FIXTURE = {
   ],
 };
 
-export default function ProcessingPage() {
+function ProcessingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<SearchState>("IDENTIFYING");
@@ -163,5 +163,13 @@ export default function ProcessingPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function ProcessingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500">加载中...</div>}>
+      <ProcessingPageContent />
+    </Suspense>
   );
 }

@@ -11,10 +11,18 @@
 - `GEMINI_API_KEY`
 - `DEEPSEEK_API_KEY`
 
-Optional but recommended:
-- `DEEPSEEK_BASE_URL` (default: `https://api.deepseek.com`)
-- `DEEPSEEK_MODEL` (default: `deepseek-chat`)
-- `MOCK_MODE` / `FORCE_MOCK_ANALYZE` (`true` enables analyze fallback mock mode)
+Additional env names referenced by code paths:
+- `DEEPSEEK_BASE_URL`
+- `DEEPSEEK_MODEL`
+- `MOCK_MODE`
+- `FORCE_MOCK_ANALYZE`
+- `ANALYZE_MAX_RETRIES`
+- `ANALYZE_BACKOFF_BASE_MS`
+- `ANALYZE_CACHE_TTL_MS`
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL`
+- `OPENAI_MODEL`
+- `NEXT_PUBLIC_GEMINI_API_KEY`
 
 Notes:
 - Do not commit `.env.local`.

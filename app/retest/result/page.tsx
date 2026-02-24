@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, ChevronLeft, CircleAlert } from "lucide-react";
 import { REPAIR_CAUSE_OPTIONS, isRepairCause } from "@/data/training/repair_7days";
@@ -23,7 +23,7 @@ function findCauseLabel(cause: string): string {
   return REPAIR_CAUSE_OPTIONS.find((item) => item.key === cause)?.label || "画线想不到";
 }
 
-export default function RetestResultPage() {
+function RetestResultPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -110,5 +110,13 @@ export default function RetestResultPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function RetestResultPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+      <RetestResultPageContent />
+    </Suspense>
   );
 }

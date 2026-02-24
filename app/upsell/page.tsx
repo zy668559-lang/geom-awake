@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ChevronLeft } from "lucide-react";
 import { REPAIR_CAUSE_OPTIONS, isRepairCause } from "@/data/training/repair_7days";
@@ -19,7 +19,7 @@ function resolveCause(rawCause: string | null): string {
   return "draw_line";
 }
 
-export default function UpsellPage() {
+function UpsellPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -84,5 +84,13 @@ export default function UpsellPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function UpsellPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+      <UpsellPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Camera, ChevronLeft, Loader2, Send, X } from "lucide-react";
 import { getRepairPack, isRepairCause, type RepairCause } from "@/data/training/repair_7days";
@@ -12,7 +12,7 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export default function SubmitPage() {
+function SubmitPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -262,5 +262,13 @@ export default function SubmitPage() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+export default function SubmitPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+      <SubmitPageContent />
+    </Suspense>
   );
 }

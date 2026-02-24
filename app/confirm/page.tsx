@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import { REPAIR_CAUSE_OPTIONS, isRepairCause } from "@/data/training/repair_7days";
@@ -32,7 +32,7 @@ function packageText(pkg: string): { title: string; fee: string } {
   };
 }
 
-export default function ConfirmPage() {
+function ConfirmPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pkg = searchParams.get("pkg") === "B" ? "B" : "A";
@@ -84,5 +84,13 @@ export default function ConfirmPage() {
         </button>
       </main>
     </div>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+      <ConfirmPageContent />
+    </Suspense>
   );
 }

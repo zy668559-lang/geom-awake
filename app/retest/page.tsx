@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ChevronLeft, X } from "lucide-react";
 import { REPAIR_CAUSE_OPTIONS, RepairCause, isRepairCause } from "@/data/training/repair_7days";
@@ -15,7 +15,7 @@ function getQuickComment(rate: number): string {
   return "别急，这只是初诊，先把方法踩稳。";
 }
 
-export default function RetestPage() {
+function RetestPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedCause, setSelectedCause] = useState<RepairCause>("draw_line");
@@ -240,5 +240,13 @@ export default function RetestPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export default function RetestPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+      <RetestPageContent />
+    </Suspense>
   );
 }

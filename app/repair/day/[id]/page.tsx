@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { BookOpen, ChevronLeft, Quote, Send, Sparkles } from "lucide-react";
 import { getRepairPack, isRepairCause } from "@/data/training/repair_7days";
 
-export default function DayDetailsPage() {
+function DayDetailsPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -93,5 +93,13 @@ export default function DayDetailsPage() {
         </button>
       </main>
     </div>
+  );
+}
+
+export default function DayDetailsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+      <DayDetailsPageContent />
+    </Suspense>
   );
 }

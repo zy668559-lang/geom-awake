@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowRight, ChevronLeft } from "lucide-react";
 
@@ -10,7 +10,7 @@ function resolveNextPath(nextValue: string | null): string {
     return nextValue;
 }
 
-export default function UnlockPage() {
+function UnlockPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [code, setCode] = useState("");
@@ -93,5 +93,13 @@ export default function UnlockPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function UnlockPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center text-slate-500">加载中...</div>}>
+            <UnlockPageContent />
+        </Suspense>
     );
 }

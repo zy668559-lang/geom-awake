@@ -56,7 +56,7 @@ export default function UpsellPage() {
               <li>- 24小时内交付</li>
             </ul>
             <button
-              onClick={() => router.push(`/upsell/submit?pkg=A&cause=${cause}`)}
+              onClick={() => router.push(`/confirm?pkg=A&cause=${cause}`)}
               className="mt-6 w-full bg-[#1A1A1A] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               我选 199
@@ -74,7 +74,7 @@ export default function UpsellPage() {
             </ul>
             <p className="mt-4 text-sm font-black text-[#FF7A00]">已有 1245 位家长通过此方案帮孩子挽回 20分</p>
             <button
-              onClick={() => router.push(`/upsell/submit?pkg=B&cause=${cause}`)}
+              onClick={() => router.push(`/confirm?pkg=B&cause=${cause}`)}
               className="mt-6 w-full bg-[#FF7A00] text-white py-4 rounded-2xl font-black hover:brightness-105 transition-all flex items-center justify-center gap-2"
             >
               我选 599

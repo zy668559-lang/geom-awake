@@ -34,7 +34,7 @@ export default function PricingPage() {
             <p className="text-slate-800 font-bold mt-3">专治：逻辑断层、证明无思路</p>
             <p className="text-slate-600 mt-2">AI 自动化诊断，适合基础自测。</p>
             <button
-              onClick={() => router.push("/upsell/submit?pkg=A")}
+              onClick={() => router.push("/confirm?pkg=A")}
               className="mt-6 w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               我选 199 套餐
@@ -48,7 +48,7 @@ export default function PricingPage() {
             <p className="text-slate-900 font-black mt-3">真人复核 + 1对1 针对性纠偏 + 提分保险</p>
             <p className="text-slate-700 mt-2">适合想冲分、要有人盯进度的家庭。</p>
             <button
-              onClick={() => router.push("/upsell/submit?pkg=B")}
+              onClick={() => router.push("/confirm?pkg=B")}
               className="mt-6 w-full bg-[#FF7A00] text-white py-3.5 rounded-xl font-black hover:brightness-105 transition-all flex items-center justify-center gap-2"
             >
               我选 599 套餐

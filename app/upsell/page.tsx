@@ -48,7 +48,7 @@ function UpsellPageContent() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <article className="bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm">
-            <h2 className="text-2xl font-black text-slate-900">【方案一】AI 自主纠偏包（199元）</h2>
+            <h2 className="text-2xl font-black text-slate-900">【方案一】AI自主纠偏包（专治思路断片儿）</h2>
             <p className="text-3xl font-black text-[#667EEA] mt-2">￥199</p>
             <ul className="mt-4 space-y-2 text-slate-700 font-medium">
               <li>- 2份PDF：稳分卷1套 + 提分卷1套</li>
@@ -57,15 +57,15 @@ function UpsellPageContent() {
             </ul>
             <button
               onClick={() => router.push(`/confirm?pkg=A&cause=${cause}`)}
-              className="mt-6 w-full bg-[#1A1A1A] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="mt-6 w-full bg-[#FF4D2D] text-white py-4 rounded-2xl font-black hover:brightness-105 transition-all flex items-center justify-center gap-2"
             >
-              我选 199
+              立即帮孩子开窍
               <ArrowRight size={18} />
             </button>
           </article>
 
           <article className="bg-[#FFF4D6] border-2 border-[#F59E0B] rounded-[24px] p-6 shadow-lg">
-            <h2 className="text-2xl font-black text-slate-900">【方案二】陈老师核心团队带练（599元/仅剩3名）</h2>
+            <h2 className="text-2xl font-black text-slate-900">【方案二】陈老师团队保分直通车（仅余3名额）</h2>
             <p className="text-3xl font-black text-[#F59E0B] mt-2">￥599</p>
             <ul className="mt-4 space-y-2 text-slate-800 font-bold">
               <li>- 4周计划：每周复检6题（共4次）+ 周报4份</li>
@@ -75,9 +75,9 @@ function UpsellPageContent() {
             <p className="mt-4 text-sm font-black text-[#FF7A00]">已有 1245 位家长通过此方案帮孩子挽回 20分</p>
             <button
               onClick={() => router.push(`/confirm?pkg=B&cause=${cause}`)}
-              className="mt-6 w-full bg-[#FF7A00] text-white py-4 rounded-2xl font-black hover:brightness-105 transition-all flex items-center justify-center gap-2"
+              className="mt-6 w-full bg-[#FF4D2D] text-white py-4 rounded-2xl font-black hover:brightness-105 transition-all flex items-center justify-center gap-2"
             >
-              我选 599
+              立即帮孩子开窍
               <ArrowRight size={18} />
             </button>
           </article>

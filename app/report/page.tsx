@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -66,7 +66,7 @@ export default function ReportPage() {
         <button onClick={() => router.push("/")} className="text-slate-400 font-medium hover:text-slate-600">
           关闭
         </button>
-        <span className="mx-auto font-bold text-slate-800">陈老师体检报告</span>
+        <span className="mx-auto font-bold text-slate-800">陈老师亲笔：几何思维体检报告</span>
         <div className="w-8" />
       </nav>
 
@@ -93,7 +93,7 @@ export default function ReportPage() {
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">解析总览</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="rounded-2xl bg-red-50 border border-red-100 p-4">
-                <p className="text-sm font-black text-red-600">思维断层</p>
+                <p className="text-sm font-black text-red-600">逻辑断层</p>
                 <p className="text-sm text-slate-700 mt-1">前后步骤接不上，写到一半就断了。</p>
               </div>
               <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">

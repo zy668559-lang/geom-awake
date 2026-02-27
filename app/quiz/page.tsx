@@ -22,13 +22,13 @@ const QUIZ_OPTIONS: QuizOption[] = [
     id: "b",
     label: "直接写结论，后面再补理由",
     isCorrect: false,
-    feedbackText: "这里是‘逻辑断片儿’的高发区，快看陈老师的深度诊断！",
+    feedbackText: "如果不纠正这个坏习惯，孩子中考几何至少丢10分！别让努力白费，看陈老师怎么说。",
   },
   {
     id: "c",
     label: "先猜答案，再从图上找能对上的点",
     isCorrect: false,
-    feedbackText: "这里是‘逻辑断片儿’的高发区，快看陈老师的深度诊断！",
+    feedbackText: "如果不纠正这个坏习惯，孩子中考几何至少丢10分！别让努力白费，看陈老师怎么说。",
   },
 ];
 
@@ -77,12 +77,11 @@ export default function QuizPage() {
           <section className="bg-white rounded-[24px] p-6 shadow-lg border border-[#667EEA]/20 animate-in fade-in zoom-in-95 duration-150">
             <h2 className="text-xl font-black text-slate-900">{resultTitle}</h2>
             <p className="text-slate-700 mt-2">{picked.feedbackText}</p>
-            <p className="text-red-600 font-black mt-3">陈老师诊断：孩子不是笨，是这几个坑没人带他跳过去！</p>
             <button
               onClick={() => router.push("/processing")}
-              className="mt-5 w-full bg-[#FF7A00] text-white py-4 rounded-2xl font-black text-lg hover:brightness-105 transition-all"
+              className="mt-5 w-full bg-[#FF4D2D] text-white py-5 rounded-2xl font-black text-xl animate-pulse hover:brightness-105 transition-all shadow-[0_12px_30px_rgba(255,77,45,0.45)]"
             >
-              领取完整诊断报告
+              立即获取我的专属避坑诊断报告
             </button>
           </section>
         ) : null}

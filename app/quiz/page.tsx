@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,7 @@ const QUIZ_OPTIONS: QuizOption[] = [
     id: "a",
     label: "先把已知条件一条条写清楚，再往下推",
     isCorrect: true,
-    feedbackText: "这步做对了，你在用“先搭骨架再推进”的稳分思路。",
+    feedbackText: "这步做对了，你在用‘先搭骨架再推进’的稳分思路。",
   },
   {
     id: "b",
@@ -77,6 +77,7 @@ export default function QuizPage() {
           <section className="bg-white rounded-[24px] p-6 shadow-lg border border-[#667EEA]/20 animate-in fade-in zoom-in-95 duration-150">
             <h2 className="text-xl font-black text-slate-900">{resultTitle}</h2>
             <p className="text-slate-700 mt-2">{picked.feedbackText}</p>
+            <p className="text-red-600 font-black mt-3">陈老师诊断：孩子不是笨，是这几个坑没人带他跳过去！</p>
             <button
               onClick={() => router.push("/processing")}
               className="mt-5 w-full bg-[#FF7A00] text-white py-4 rounded-2xl font-black text-lg hover:brightness-105 transition-all"

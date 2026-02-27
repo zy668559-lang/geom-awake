@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -43,12 +43,12 @@ function UpsellPageContent() {
       <main className="flex-1 max-w-3xl mx-auto w-full p-6 space-y-6 pb-24">
         <header className="bg-white rounded-[28px] p-8 shadow-sm">
           <h1 className="text-3xl font-black text-slate-900 mb-2">别让这次努力白费，把分数稳住</h1>
-          <p className="text-slate-600 font-medium">你家孩子当前主要卡点：{causeLabel}。下面两档，按你现在的预算直接选。</p>
+          <p className="text-slate-600 font-medium">孩子当前主要卡点：{causeLabel}。别犹豫，先锁定名额，孩子提分等不起。</p>
         </header>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <article className="bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm">
-            <h2 className="text-2xl font-black text-slate-900">【AI 纠偏版】孩子自主开窍方案</h2>
+            <h2 className="text-2xl font-black text-slate-900">【方案一】AI 自主纠偏包（199元）</h2>
             <p className="text-3xl font-black text-[#667EEA] mt-2">￥199</p>
             <ul className="mt-4 space-y-2 text-slate-700 font-medium">
               <li>- 2份PDF：稳分卷1套 + 提分卷1套</li>
@@ -65,7 +65,7 @@ function UpsellPageContent() {
           </article>
 
           <article className="bg-[#FFF4D6] border-2 border-[#F59E0B] rounded-[24px] p-6 shadow-lg">
-            <h2 className="text-2xl font-black text-slate-900">【名师直通版】陈老师团队全程保分（仅限3人）</h2>
+            <h2 className="text-2xl font-black text-slate-900">【方案二】陈老师核心团队带练（599元/仅剩3名）</h2>
             <p className="text-3xl font-black text-[#F59E0B] mt-2">￥599</p>
             <ul className="mt-4 space-y-2 text-slate-800 font-bold">
               <li>- 4周计划：每周复检6题（共4次）+ 周报4份</li>

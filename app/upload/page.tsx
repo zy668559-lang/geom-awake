@@ -2,15 +2,22 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Camera, Loader2, X } from "lucide-react";
+import { ArrowRight, Camera, Images, Loader2, X } from "lucide-react";
+import { preprocessImageForAnalyze } from "@/lib/client/image-preprocess";
 
 export default function UploadPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const albumInputRef = useRef<HTMLInputElement>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [note, setNote] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [prepareText, setPrepareText] = useState("");
+  const [errorText, setErrorText] = useState("");
+
   const [activationCode, setActivationCode] = useState("");
   const [isActivating, setIsActivating] = useState(false);
   const [isActive, setIsActive] = useState(() => {
@@ -18,10 +25,15 @@ export default function UploadPage() {
     return localStorage.getItem("is_activated") === "true";
   });
 
+  const cleanupPreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+  };
+
   const handleActivate = async () => {
     if (!activationCode.trim() || isActivating) return;
     setIsActivating(true);
-
     try {
       const resp = await fetch("/api/activate", {
         method: "POST",
@@ -43,56 +55,78 @@ export default function UploadPage() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const prepareAndPreview = async (file: File | undefined) => {
+    if (!file || isPreparing || isAnalyzing) return;
+    setIsPreparing(true);
+    setErrorText("");
 
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+    try {
+      const prepared = await preprocessImageForAnalyze(file, (text) => setPrepareText(text));
+      cleanupPreview();
+      const nextPreview = URL.createObjectURL(prepared.file);
+      setSelectedFile(prepared.file);
+      setPreviewUrl(nextPreview);
+    } catch (error: any) {
+      setErrorText(error?.message || "图片处理失败，请换一张图。");
+      setSelectedFile(null);
+      cleanupPreview();
+      setPreviewUrl(null);
+    } finally {
+      setIsPreparing(false);
+      setPrepareText("");
     }
+  };
 
-    const nextPreview = URL.createObjectURL(file);
-    setSelectedFile(file);
-    setPreviewUrl(nextPreview);
+  const onCameraChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    void prepareAndPreview(file);
+  };
+
+  const onAlbumChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    void prepareAndPreview(file);
   };
 
   const handleClear = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    cleanupPreview();
     setPreviewUrl(null);
     setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setErrorText("");
   };
 
   const handleStartDiagnosis = async () => {
     if (!selectedFile || isAnalyzing || !isActive) return;
     setIsAnalyzing(true);
+    setErrorText("");
 
     try {
       const formData = new FormData();
       formData.append("image", selectedFile);
       formData.append("cause", "draw_line");
-      formData.append("note", "上传页直接诊断");
+      formData.append("note", note.trim() || "上传页直接诊断");
+
+      const useMockAnalyze = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const headers = useMockAnalyze ? { "x-analyze-mock": "1" } : undefined;
 
       const response = await fetch("/api/analyze", {
         method: "POST",
         body: formData,
+        headers,
       });
 
       const payloadText = await response.text();
       const payload = payloadText ? JSON.parse(payloadText) : null;
 
-      if (!response.ok) {
-        throw new Error(payload?.message || payload?.error || `诊断失败（HTTP ${response.status}）`);
+      if (!response.ok || payload?.errorCode) {
+        throw new Error(payload?.reason || payload?.message || payload?.error || `诊断失败（HTTP ${response.status}）`);
       }
 
       localStorage.setItem("latest_diagnosis", JSON.stringify(payload));
       router.push("/report");
     } catch (error: any) {
-      window.alert(error?.message || "诊断失败，请稍后重试。");
+      setErrorText(error?.message || "诊断失败，请稍后重试。");
       setIsAnalyzing(false);
     }
   };
@@ -100,33 +134,44 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col p-6">
       <div className="flex items-center justify-between mb-8">
-        <button
-          onClick={() => router.back()}
-          className="p-3 bg-white rounded-full shadow-sm hover:bg-slate-50 transition-colors"
-        >
+        <button onClick={() => router.back()} className="p-3 bg-white rounded-full shadow-sm hover:bg-slate-50 transition-colors">
           <ArrowRight className="rotate-180 text-slate-600" size={24} />
         </button>
         <span className="font-bold text-slate-800">上传错题</span>
         <div className="w-10" />
       </div>
 
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={onCameraChange}
+      />
+      <input ref={albumInputRef} type="file" accept="image/*" className="hidden" onChange={onAlbumChange} />
+
       <div className="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full">
         {!previewUrl ? (
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full aspect-[3/4] bg-white rounded-[32px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-[#667EEA] hover:bg-blue-50/30 transition-all group"
-          >
-            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Camera className="text-slate-400 group-hover:text-[#667EEA]" size={40} />
-            </div>
-            <p className="text-slate-400 font-medium">点击拍照 / 上传图片</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
+          <div className="w-full space-y-3">
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={isPreparing || isAnalyzing}
+              className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              <Camera size={18} />
+              拍照上传
+            </button>
+            <button
+              type="button"
+              onClick={() => albumInputRef.current?.click()}
+              disabled={isPreparing || isAnalyzing}
+              className="w-full py-4 rounded-2xl bg-white border border-slate-300 text-slate-800 font-black flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              <Images size={18} />
+              从相册选择
+            </button>
           </div>
         ) : (
           <div className="relative w-full aspect-[3/4] bg-black rounded-[32px] overflow-hidden shadow-2xl">
@@ -146,9 +191,24 @@ export default function UploadPage() {
             ) : null}
           </div>
         )}
+
+        {isPreparing ? (
+          <div className="mt-4 text-sm font-bold text-slate-600 flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin" />
+            <span>{prepareText || "正在处理图片..."}</span>
+          </div>
+        ) : null}
       </div>
 
-      <div className="mt-8 max-w-lg mx-auto w-full">
+      <div className="mt-8 max-w-lg mx-auto w-full space-y-3">
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="写一句孩子卡在哪（选填）"
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white outline-none focus:ring-2 focus:ring-[#667EEA]"
+          disabled={isAnalyzing}
+        />
         <button
           onClick={handleStartDiagnosis}
           disabled={!selectedFile || isAnalyzing || !isActive}
@@ -184,6 +244,7 @@ export default function UploadPage() {
           </div>
         ) : null}
 
+        {errorText ? <p className="text-sm font-bold text-red-600">{errorText}</p> : null}
         <p className="text-center text-xs text-slate-400 mt-4">AI 仅用于辅助教学，结果仅供参考。</p>
       </div>
     </div>

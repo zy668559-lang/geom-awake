@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, ArrowRight, Brain, MessageCircle, Search } from "lucide-react";
+import { AlertTriangle, ArrowRight, Brain, Camera, Images, Loader2, MessageCircle, Search } from "lucide-react";
+import { preprocessImageForAnalyze } from "@/lib/client/image-preprocess";
 
 type SearchState = "IDENTIFYING" | "INTERACTING" | "REASONING";
 const DIAGNOSIS_TIMEOUT_MS = 25_000;
@@ -62,12 +63,16 @@ function ProcessingPageContent() {
   const [state, setState] = useState<SearchState>("IDENTIFYING");
   const [stuckPoint, setStuckPoint] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPreparingImage, setIsPreparingImage] = useState(false);
+  const [prepareText, setPrepareText] = useState("");
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   const hasInitialized = useRef(false);
   const processingLockRef = useRef(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const albumInputRef = useRef<HTMLInputElement>(null);
   const demoMode = searchParams.get("demo") === "1";
   const canDiagnose = demoMode || Boolean(imageBase64);
 
@@ -97,12 +102,53 @@ function ProcessingPageContent() {
     }
 
     setState("INTERACTING");
-    setErrorMessage("没有拿到题目图片，请返回重新上传后再试。");
+    setErrorMessage("请先上传题目图片（支持拍照或相册）。");
   }, [demoMode, router, searchParams]);
 
   const showFlowError = (message: string) => {
     setErrorMessage(message);
     setState("INTERACTING");
+  };
+
+  const handlePickCamera = () => {
+    if (isPreparingImage || isProcessing) return;
+    cameraInputRef.current?.click();
+  };
+
+  const handlePickAlbum = () => {
+    if (isPreparingImage || isProcessing) return;
+    albumInputRef.current?.click();
+  };
+
+  const handleImageSelected = async (file: File | undefined) => {
+    if (!file || isPreparingImage || isProcessing) return;
+    setIsPreparingImage(true);
+    setPrepareText("正在处理图片...");
+    setErrorMessage("");
+
+    try {
+      const prepared = await preprocessImageForAnalyze(file, (text) => setPrepareText(text));
+      localStorage.setItem("pending_geometry_image", prepared.dataUrl);
+      setImageBase64(prepared.dataUrl);
+      setState("INTERACTING");
+      setPrepareText("");
+    } catch (error: any) {
+      showFlowError(error?.message || "图片处理失败，请换一张更清晰的题图。");
+    } finally {
+      setIsPreparingImage(false);
+    }
+  };
+
+  const onCameraChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    void handleImageSelected(file);
+  };
+
+  const onAlbumChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    void handleImageSelected(file);
   };
 
   const handleStartDiagnosis = async (point: string) => {
@@ -111,7 +157,7 @@ function ProcessingPageContent() {
     const finalPoint = (point || stuckPoint).trim();
     if (!finalPoint) return;
     if (!canDiagnose) {
-      showFlowError("缺少题目图片，不能开始诊断。请返回重新上传。");
+      showFlowError("缺少题目图片，不能开始诊断。请先上传图片。");
       return;
     }
 
@@ -140,20 +186,22 @@ function ProcessingPageContent() {
       }
 
       const cause = inferCauseFromNote(finalPoint);
-      const imageFile = dataUrlToFile(
-        imageBase64 as string,
-        `geometry-${sessionId || Date.now().toString(36)}.png`
-      );
+      const imageFile = dataUrlToFile(imageBase64 as string, `geometry-${sessionId || Date.now().toString(36)}.png`);
       const formData = new FormData();
       formData.append("image", imageFile);
       formData.append("cause", cause);
       formData.append("note", finalPoint);
       formData.append("sid", sessionId);
 
+      const host = window.location.hostname;
+      const useMockAnalyze = host === "localhost" || host === "127.0.0.1";
+      const headers = useMockAnalyze ? { "x-analyze-mock": "1" } : undefined;
+
       const res = await fetch("/api/analyze", {
         method: "POST",
         body: formData,
         signal: abortController.signal,
+        headers,
       });
 
       let responseData: any = null;
@@ -164,16 +212,22 @@ function ProcessingPageContent() {
         responseData = { message: rawBody };
       }
 
-      if (!res.ok) {
+      if (!res.ok || responseData?.errorCode) {
         throw new Error(
-          responseData?.message ||
+          responseData?.reason ||
+            responseData?.message ||
             responseData?.details ||
             responseData?.error ||
             `诊断失败（HTTP ${res.status}）`
         );
       }
 
-      if (!responseData || typeof responseData !== "object") {
+      if (
+        !responseData ||
+        typeof responseData !== "object" ||
+        typeof responseData.stuckPoint !== "string" ||
+        typeof responseData.rootCause !== "string"
+      ) {
         throw new Error("诊断返回格式异常，请重试。");
       }
 
@@ -203,6 +257,16 @@ function ProcessingPageContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={onCameraChange}
+      />
+      <input ref={albumInputRef} type="file" accept="image/*" className="hidden" onChange={onAlbumChange} />
+
       <div className="relative mb-12">
         <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center animate-pulse">
           {state === "IDENTIFYING" && <Search className="text-slate-400 w-12 h-12 animate-bounce" />}
@@ -216,6 +280,13 @@ function ProcessingPageContent() {
       <div className="max-w-xl mx-auto space-y-6">
         <h2 className="text-2xl font-black text-slate-800 leading-snug min-h-[4rem]">{STEPS[state]}</h2>
         {isProcessing ? <p className="text-sm font-bold text-[#667EEA]">陈老师正在全神贯注诊断中...</p> : null}
+
+        {isPreparingImage ? (
+          <div className="flex items-center justify-center gap-2 text-slate-600 font-bold">
+            <Loader2 size={16} className="animate-spin" />
+            <span>{prepareText || "正在处理图片..."}</span>
+          </div>
+        ) : null}
 
         {errorMessage ? (
           <section
@@ -246,11 +317,33 @@ function ProcessingPageContent() {
           </section>
         ) : null}
 
-        {!canDiagnose && !isProcessing ? (
-          <p className="text-xs text-slate-500">请先返回上传一张错题图片，再继续诊断。</p>
+        {!canDiagnose && !isProcessing && !demoMode ? (
+          <div className="space-y-3">
+            <p className="text-xs text-slate-500">先传一张题图，再开始诊断。</p>
+            <div className="grid gap-2 md:grid-cols-2">
+              <button
+                type="button"
+                onClick={handlePickCamera}
+                disabled={isPreparingImage || isProcessing}
+                className="py-3 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <Camera size={16} />
+                拍照上传
+              </button>
+              <button
+                type="button"
+                onClick={handlePickAlbum}
+                disabled={isPreparingImage || isProcessing}
+                className="py-3 rounded-xl bg-white border border-slate-300 text-slate-700 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <Images size={16} />
+                从相册选择
+              </button>
+            </div>
+          </div>
         ) : null}
 
-        {state === "INTERACTING" && (
+        {state === "INTERACTING" ? (
           <div className="grid gap-3 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
             {STUCK_OPTIONS.map((opt) => (
               <button
@@ -282,14 +375,16 @@ function ProcessingPageContent() {
               </button>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="flex gap-2 mt-12 pb-12">
         {["IDENTIFYING", "INTERACTING", "REASONING"].map((step) => (
           <div
             key={step}
-            className={`h-1.5 rounded-full transition-all duration-500 ${state === step ? "w-8 bg-slate-800" : "w-1.5 bg-slate-200"}`}
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              state === step ? "w-8 bg-slate-800" : "w-1.5 bg-slate-200"
+            }`}
           />
         ))}
       </div>
@@ -299,7 +394,9 @@ function ProcessingPageContent() {
 
 export default function ProcessingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500">加载中...</div>}>
+    <Suspense
+      fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500">加载中...</div>}
+    >
       <ProcessingPageContent />
     </Suspense>
   );

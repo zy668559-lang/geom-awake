@@ -9,7 +9,9 @@ type DiagnosisData = {
   stuckPoint: string;
   rootCause: string;
   coachAdvice: string;
+  riskWarning?: string;
   threeDayPlan: { day: number; task: string }[];
+  inputHashTail?: string;
 };
 
 function inferCause(text: string): RepairCause {
@@ -77,6 +79,9 @@ export default function ReportPage() {
           </div>
           <h1 className="text-3xl font-black text-slate-800 leading-snug mb-3">{data.stuckPoint}</h1>
           <p className="text-slate-700 font-bold">陈老师结论：{verdict}</p>
+          {data.inputHashTail ? (
+            <p className="mt-3 text-xs text-slate-400">诊断指纹：{data.inputHashTail}</p>
+          ) : null}
         </section>
 
         <button
@@ -117,6 +122,9 @@ export default function ReportPage() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#667EEA]/10">
               <p className="text-xl font-bold text-slate-800 leading-relaxed">{data.coachAdvice}</p>
             </div>
+            {data.riskWarning ? (
+              <p className="mt-4 text-sm font-bold text-red-600">不修这一步的风险：{data.riskWarning}</p>
+            ) : null}
           </div>
         </section>
 

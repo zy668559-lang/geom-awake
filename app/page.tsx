@@ -1,83 +1,117 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera } from "lucide-react";
+import { Camera, Images, Loader2 } from "lucide-react";
+import { preprocessImageForAnalyze } from "@/lib/client/image-preprocess";
 
-export default function Home() {
+function buildSessionId() {
+  return `sid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export default function HomePage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const albumInputRef = useRef<HTMLInputElement>(null);
 
-  const handleStart = () => {
-    fileInputRef.current?.click();
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [progressText, setProgressText] = useState("");
+  const [errorText, setErrorText] = useState("");
+
+  const handlePickCamera = () => {
+    if (isPreparing) return;
+    cameraInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const sid = `sid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-        localStorage.setItem("pending_geometry_sid", sid);
-        localStorage.setItem("pending_geometry_image", reader.result as string);
-        router.push(`/processing?sid=${encodeURIComponent(sid)}`);
-      };
-      reader.onerror = () => {
-        window.alert("图片读取失败，请换一张清晰图片重试。");
-      };
-      reader.readAsDataURL(file);
+  const handlePickAlbum = () => {
+    if (isPreparing) return;
+    albumInputRef.current?.click();
+  };
+
+  const handleImageSelected = async (file: File | undefined) => {
+    if (!file || isPreparing) return;
+
+    setIsPreparing(true);
+    setErrorText("");
+    setProgressText("正在读取图片...");
+
+    try {
+      const prepared = await preprocessImageForAnalyze(file, (text) => setProgressText(text));
+      const sid = buildSessionId();
+      localStorage.setItem("pending_geometry_sid", sid);
+      localStorage.setItem("pending_geometry_image", prepared.dataUrl);
+      router.push(`/processing?sid=${encodeURIComponent(sid)}`);
+    } catch (error: any) {
+      setErrorText(error?.message || "图片处理失败，请换一张清晰的题图再试。");
+      setIsPreparing(false);
+      setProgressText("");
     }
+  };
+
+  const onCameraChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    void handleImageSelected(file);
+  };
+
+  const onAlbumChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    void handleImageSelected(file);
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
-      {/* 极简标题区 */}
-      <div className="text-center mb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-2xl">
-        <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-          几何思维 AI 体检中心
-        </h1>
-        <p className="text-slate-500 text-xl font-medium tracking-wide leading-relaxed">
-          陈老师 AI 体检：少走冤枉路
-        </p>
+      <div className="text-center mb-12 max-w-2xl">
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">几何思维体检中心</h1>
+        <p className="mt-4 text-slate-500 text-lg font-medium">拍题后 1 次诊断，直接看到孩子卡在哪一步。</p>
       </div>
 
       <input
+        ref={cameraInputRef}
         type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
         accept="image/*"
         capture="environment"
         className="hidden"
+        onChange={onCameraChange}
+      />
+      <input
+        ref={albumInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onAlbumChange}
       />
 
-      {/* 核心交互区 - 极简大圆角按钮 */}
-      <button
-        onClick={handleStart}
-        className="group relative px-12 py-10 bg-white rounded-[64px] shadow-[0_30px_80px_-15px_rgba(0,0,0,0.1)]
-                   border border-slate-100/50
-                   flex flex-col items-center justify-center gap-8
-                   hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-      >
-        <div className="w-28 h-28 rounded-[40px] bg-slate-900 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
-          <Camera size={56} className="text-white" strokeWidth={2} />
-        </div>
-
-        <div className="text-center">
-          <span className="block text-2xl font-black text-slate-800 tracking-tight">
-            拍下难题，开始体检
-          </span>
-          <span className="block text-sm text-slate-400 mt-2 font-medium">
-            AI 辅助寻找解题突破口
-          </span>
-        </div>
-      </button>
-
-      {/* 底部文案 */}
-      <div className="fixed bottom-12 text-center">
-        <p className="text-xs text-slate-300 font-light tracking-widest uppercase opacity-60">
-          极简主义 · 陈老师工作室
-        </p>
+      <div className="w-full max-w-md space-y-4">
+        <button
+          onClick={handlePickCamera}
+          disabled={isPreparing}
+          className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-lg flex items-center justify-center gap-2 disabled:opacity-60"
+        >
+          <Camera size={20} />
+          拍照上传
+        </button>
+        <button
+          onClick={handlePickAlbum}
+          disabled={isPreparing}
+          className="w-full py-4 rounded-2xl bg-white border border-slate-300 text-slate-800 font-black text-lg flex items-center justify-center gap-2 disabled:opacity-60"
+        >
+          <Images size={20} />
+          从相册选择
+        </button>
       </div>
+
+      {isPreparing ? (
+        <div className="mt-6 flex items-center gap-2 text-slate-600 font-bold">
+          <Loader2 className="animate-spin" size={18} />
+          <span>{progressText || "正在处理..."}</span>
+        </div>
+      ) : null}
+
+      {errorText ? (
+        <p className="mt-6 max-w-md text-center text-sm font-bold text-red-600 leading-relaxed">{errorText}</p>
+      ) : null}
     </div>
   );
 }

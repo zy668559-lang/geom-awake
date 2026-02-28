@@ -29,6 +29,11 @@ const ANALYZE_MAX_RETRIES = readIntEnv("ANALYZE_MAX_RETRIES", 3);
 const ANALYZE_BASE_BACKOFF_MS = readIntEnv("ANALYZE_BACKOFF_BASE_MS", 800);
 const ANALYZE_CACHE_TTL_MS = readIntEnv("ANALYZE_CACHE_TTL_MS", 120000);
 
+function logMethodPath(req: Request, requestId: string, tag: string) {
+  const pathname = new URL(req.url).pathname;
+  console.log(`[Analyze API][${requestId}] ${tag} method=${req.method} path=${pathname}`);
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -137,6 +142,7 @@ async function callDeepSeekWithRetry(params: {
 export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(2, 10).toUpperCase();
   const startTime = Date.now();
+  logMethodPath(req, requestId, "incoming");
   console.log(`🚀 [Analyze API][${requestId}] Request Started at ${new Date().toISOString()}`);
 
   // 强制确认 Key 存在
@@ -293,4 +299,17 @@ export async function POST(req: Request) {
       { status: error?.status || 500 }
     );
   }
+}
+
+export async function OPTIONS(req: Request) {
+  const requestId = Math.random().toString(36).substring(2, 10).toUpperCase();
+  logMethodPath(req, requestId, "preflight");
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: "POST, OPTIONS",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }

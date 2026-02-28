@@ -1,6 +1,8 @@
 name: Production Smoke
 
 on:
+  push:
+    branches: [main, master]
   workflow_dispatch:
     inputs:
       base_url:

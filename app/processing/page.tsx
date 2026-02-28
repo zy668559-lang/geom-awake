@@ -36,6 +36,26 @@ function createSessionId() {
   return `sid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function inferCauseFromNote(note: string): string {
+  if (/辅?助线|画线|看图/.test(note)) return "draw_line";
+  if (/条件|关系|因为|所以/.test(note)) return "condition_relation";
+  if (/证明|推理|全等/.test(note)) return "proof_writing";
+  return "draw_line";
+}
+
+function dataUrlToFile(dataUrl: string, fileName: string): File {
+  const hasPrefix = dataUrl.includes(",");
+  const [meta, content] = hasPrefix ? dataUrl.split(",", 2) : ["data:image/png;base64", dataUrl];
+  const mimeMatch = meta?.match(/data:(.*?);base64/);
+  const mimeType = mimeMatch?.[1] || "image/png";
+  const binary = atob(content || "");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new File([bytes], fileName, { type: mimeType });
+}
+
 function ProcessingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -119,14 +139,20 @@ function ProcessingPageContent() {
         return;
       }
 
+      const cause = inferCauseFromNote(finalPoint);
+      const imageFile = dataUrlToFile(
+        imageBase64 as string,
+        `geometry-${sessionId || Date.now().toString(36)}.png`
+      );
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("cause", cause);
+      formData.append("note", finalPoint);
+      formData.append("sid", sessionId);
+
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sid: sessionId,
-          imageBase64,
-          stuckPoint: finalPoint,
-        }),
+        body: formData,
         signal: abortController.signal,
       });
 

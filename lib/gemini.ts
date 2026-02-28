@@ -1,134 +1,190 @@
-import sharp from 'sharp';
-import { generateHash, getCachedResult, setCachedResult } from './cache';
+﻿import sharp from "sharp";
+import { generateHash, getCachedResult, setCachedResult } from "./cache";
 
-/**
- * 429/Concurrency Solution: Backend Request Queue
- * Ensures only one Gemini request is processed at a time.
- */
+export type GeminiDiagnoseInput = {
+  imageBase64: string;
+  mimeType: string;
+  cause: string;
+  note: string;
+  requestId: string;
+};
+
+class GeminiApiError extends Error {
+  status?: number;
+  rawData?: unknown;
+
+  constructor(message: string, status?: number, rawData?: unknown) {
+    super(message);
+    this.name = "GeminiApiError";
+    this.status = status;
+    this.rawData = rawData;
+  }
+}
+
 class GeminiQueue {
-    private queue: (() => Promise<void>)[] = [];
-    private processing = false;
+  private queue: Array<() => Promise<void>> = [];
+  private processing = false;
 
-    async add<T>(task: () => Promise<T>): Promise<T> {
-        return new Promise((resolve, reject) => {
-            this.queue.push(async () => {
-                try {
-                    const result = await task();
-                    resolve(result);
-                } catch (error) {
-                    reject(error);
-                }
-            });
-            this.process();
-        });
-    }
-
-    private async process() {
-        if (this.processing || this.queue.length === 0) return;
-        this.processing = true;
-        while (this.queue.length > 0) {
-            const task = this.queue.shift();
-            if (task) await task();
+  async add<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const value = await task();
+          resolve(value);
+        } catch (error) {
+          reject(error);
         }
-        this.processing = false;
+      });
+      void this.process();
+    });
+  }
+
+  private async process() {
+    if (this.processing) return;
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const task = this.queue.shift();
+      if (task) {
+        await task();
+      }
     }
+
+    this.processing = false;
+  }
 }
 
 const geminiQueue = new GeminiQueue();
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_RETRIES = 3;
 
-/**
- * Image Optimization: Resize and compress
- */
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function stripDataUrlPrefix(input: string): string {
+  return input.includes(",") ? input.split(",").slice(1).join(",") : input;
+}
+
 async function optimizeImage(base64: string): Promise<string> {
-    const buffer = Buffer.from(base64.split(',')[1] || base64, 'base64');
-    const optimized = await sharp(buffer)
-        .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 80 })
-        .toBuffer();
-    return optimized.toString('base64');
+  const raw = Buffer.from(stripDataUrlPrefix(base64), "base64");
+  const optimized = await sharp(raw)
+    .resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 82 })
+    .toBuffer();
+
+  return optimized.toString("base64");
+}
+
+function buildPrompt(cause: string, note: string): string {
+  return [
+    "你是初中几何诊断教练，请结合图片和学生描述输出严格 JSON。",
+    "不要直接给题目答案，只做思维断点诊断和3分钟纠偏建议。",
+    "输出字段必须是: stuckPoint, rootCause, coachAdvice, threeDayPlan。",
+    "threeDayPlan 必须是长度3的数组，每个元素包含 day(1-3) 和 task(一句话)。",
+    `错因线索: ${cause || "unknown"}`,
+    `学生卡点描述: ${note || "未提供"}`,
+  ].join("\n");
+}
+
+function getApiKey(): string {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new GeminiApiError("GEMINI_API_KEY is not configured", 403);
+  }
+  return apiKey;
+}
+
+export async function diagnoseGeometryWithGemini(input: GeminiDiagnoseInput): Promise<string> {
+  const { imageBase64, cause, note, requestId } = input;
+  const apiKey = getApiKey();
+
+  const contentHash = generateHash(`${imageBase64}|${cause}|${note}`);
+  const cached = getCachedResult(contentHash);
+  if (cached) {
+    console.log(`[Gemini][${requestId}] cache hit key=${contentHash.slice(0, 8)}`);
+    return cached;
+  }
+
+  return geminiQueue.add(async () => {
+    const optimizedData = await optimizeImage(imageBase64);
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      const attemptTag = `[Gemini][${requestId}] attempt ${attempt}/${MAX_RETRIES}`;
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: buildPrompt(cause, note) },
+                    { inlineData: { data: optimizedData, mimeType: "image/jpeg" } },
+                  ],
+                },
+              ],
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.2,
+                maxOutputTokens: 1200,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const rawText = await response.text();
+          const status = response.status;
+          const retryable = RETRYABLE_STATUSES.has(status);
+          console.warn(`${attemptTag} failed status=${status} retryable=${retryable}`);
+
+          if (!retryable || attempt === MAX_RETRIES) {
+            throw new GeminiApiError(`Gemini error ${status}: ${rawText || response.statusText}`, status, {
+              rawText,
+            });
+          }
+
+          await sleep(300 * 2 ** (attempt - 1));
+          continue;
+        }
+
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text || typeof text !== "string") {
+          throw new GeminiApiError("Gemini returned empty text", 502, data);
+        }
+
+        setCachedResult(contentHash, text);
+        return text;
+      } catch (error) {
+        if (error instanceof GeminiApiError) {
+          throw error;
+        }
+
+        const asMessage = error instanceof Error ? error.message : String(error);
+        console.warn(`${attemptTag} unexpected error=${asMessage}`);
+
+        if (attempt === MAX_RETRIES) {
+          throw new GeminiApiError(`Gemini request failed: ${asMessage}`, 500);
+        }
+
+        await sleep(300 * 2 ** (attempt - 1));
+      }
+    }
+
+    throw new GeminiApiError("Gemini retry exhausted", 500);
+  });
 }
 
 export async function identifyGeometry(imageBase64: string): Promise<string> {
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-        console.error("❌ [Gemini] GEMINI_API_KEY IS MISSING!");
-        throw new Error("CRITICAL: GEMINI_API_KEY 未找到");
-    }
-
-    // 1. 检查缓存
-    const imageHash = generateHash(imageBase64);
-    const cached = getCachedResult(imageHash);
-    if (cached) {
-        return cached;
-    }
-
-    // Optimization & Token Control
-    const MAX_RETRIES = 5; // 可控重试
-    const MAX_OUTPUT_TOKENS = 1000; // 降成本
-
-    return geminiQueue.add(async () => {
-        let lastError: any = null;
-
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-            try {
-                const optimizedData = await optimizeImage(imageBase64);
-
-                console.log(`--- [Gemini] Attempt ${attempt + 1} (Payload optimized) ---`);
-
-                const payload = {
-                    contents: [{
-                        parts: [
-                            { text: "你是一个专业的几何老师。请客观描述这张几何题目图片的内容、标注、文本和符号。重点记录已知条件和求证/求值目标。" },
-                            { inlineData: { data: optimizedData, mimeType: "image/jpeg" } }
-                        ]
-                    }],
-                    generationConfig: {
-                        maxOutputTokens: MAX_OUTPUT_TOKENS,
-                        temperature: 0.2
-                    }
-                };
-
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                    console.log('✅ [Gemini] Success!');
-                    // 存储缓存
-                    setCachedResult(imageHash, text);
-                    return text;
-                }
-
-                const errData = await response.json().catch(() => ({}));
-                const status = response.status;
-
-                if (status === 429 || status === 500 || status === 503) {
-                    lastError = new Error(`Gemini Error ${status}: ${errData?.error?.message || response.statusText}`);
-                    // Exponential backoff with jitter
-                    const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
-                    console.warn(`⚠️ [Gemini] Rate limited or server error (${status}). Retrying in ${Math.round(delay)}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    continue;
-                }
-
-                // Other fatal errors
-                const fatalError: any = new Error(`Gemini Fatal Error: ${errData?.error?.message || response.statusText}`);
-                fatalError.rawData = errData;
-                throw fatalError;
-
-            } catch (error: any) {
-                if (error.rawData) throw error; // Re-throw fatal
-                lastError = error;
-                console.error(`💥 [Gemini] Unexpected attempt error:`, error.message);
-                if (attempt === MAX_RETRIES - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-        throw lastError;
-    });
+  return diagnoseGeometryWithGemini({
+    imageBase64,
+    mimeType: "image/png",
+    cause: "legacy",
+    note: "legacy",
+    requestId: "LEGACY",
+  });
 }

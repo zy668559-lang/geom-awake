@@ -1,14 +1,15 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Brain, MessageCircle, Search } from "lucide-react";
+import { AlertTriangle, ArrowRight, Brain, MessageCircle, Search } from "lucide-react";
 
 type SearchState = "IDENTIFYING" | "INTERACTING" | "REASONING";
+const DIAGNOSIS_TIMEOUT_MS = 25_000;
 
 const STEPS: Record<SearchState, string> = {
   IDENTIFYING: "正在识图，先把题目条件看准。",
-  INTERACTING: "孩子现在卡在哪一步？点一个最贴近的。",
+  INTERACTING: "孩子现在卡在哪一步？点一个最接近的。",
   REASONING: "陈老师正在全神贯注诊断中...",
 };
 
@@ -25,11 +26,15 @@ const DEMO_DIAGNOSIS_FIXTURE = {
   rootCause: "你急着一步到位，关键关系没有先排好顺序。",
   coachAdvice: "今晚先慢半拍：先圈条件，再选一条最短推进线。",
   threeDayPlan: [
-    { day: 1, task: "每天只做2题，先练“看点-选线”。" },
-    { day: 2, task: "每题先写第一句“因为...所以...”。" },
-    { day: 3, task: "做完后复盘1分钟：今天到底卡在哪一步。" },
+    { day: 1, task: "每天只做2题，先练看点-选线。" },
+    { day: 2, task: "每题先写第一句：因为...所以...。" },
+    { day: 3, task: "做完后复盘5分钟：今天到底卡在哪一步。" },
   ],
 };
+
+function createSessionId() {
+  return `sid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 function ProcessingPageContent() {
   const router = useRouter();
@@ -38,33 +43,68 @@ function ProcessingPageContent() {
   const [stuckPoint, setStuckPoint] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const hasInitialized = useRef(false);
   const processingLockRef = useRef(false);
   const demoMode = searchParams.get("demo") === "1";
+  const canDiagnose = demoMode || Boolean(imageBase64);
 
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    const mockImg = localStorage.getItem("pending_geometry_image");
-    if (mockImg || demoMode) {
-      setImageBase64(mockImg || "demo-image");
-      setState("INTERACTING");
+    const pendingImage = localStorage.getItem("pending_geometry_image");
+    const sidFromQuery = searchParams.get("sid");
+    const sidFromStorage = localStorage.getItem("pending_geometry_sid");
+    const resolvedSid = sidFromQuery || sidFromStorage || createSessionId();
+
+    localStorage.setItem("pending_geometry_sid", resolvedSid);
+    setSessionId(resolvedSid);
+
+    if (!sidFromQuery) {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("sid", resolvedSid);
+      router.replace(`/processing?${nextParams.toString()}`);
     }
-  }, [demoMode]);
+
+    if (pendingImage || demoMode) {
+      setImageBase64(pendingImage || "demo-image");
+      setState("INTERACTING");
+      setErrorMessage("");
+      return;
+    }
+
+    setState("INTERACTING");
+    setErrorMessage("没有拿到题目图片，请返回重新上传后再试。");
+  }, [demoMode, router, searchParams]);
+
+  const showFlowError = (message: string) => {
+    setErrorMessage(message);
+    setState("INTERACTING");
+  };
 
   const handleStartDiagnosis = async (point: string) => {
     if (isProcessing || processingLockRef.current) return;
 
     const finalPoint = (point || stuckPoint).trim();
     if (!finalPoint) return;
+    if (!canDiagnose) {
+      showFlowError("缺少题目图片，不能开始诊断。请返回重新上传。");
+      return;
+    }
 
-    // Synchronous lock: block double-click re-entry before React state flush.
     processingLockRef.current = true;
     setIsProcessing(true);
+    setErrorMessage("");
     setStuckPoint(finalPoint);
     setState("REASONING");
+
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      abortController.abort();
+    }, DIAGNOSIS_TIMEOUT_MS);
 
     try {
       if (demoMode) {
@@ -73,7 +113,7 @@ function ProcessingPageContent() {
           JSON.stringify({
             ...DEMO_DIAGNOSIS_FIXTURE,
             stuckPoint: finalPoint || DEMO_DIAGNOSIS_FIXTURE.stuckPoint,
-          }),
+          })
         );
         router.push("/report");
         return;
@@ -83,26 +123,56 @@ function ProcessingPageContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          sid: sessionId,
           imageBase64,
           stuckPoint: finalPoint,
         }),
+        signal: abortController.signal,
       });
 
-      const responseData = await res.json();
+      let responseData: any = null;
+      const rawBody = await res.text();
+      try {
+        responseData = rawBody ? JSON.parse(rawBody) : null;
+      } catch {
+        responseData = { message: rawBody };
+      }
+
       if (!res.ok) {
-        window.alert(`诊断失败：${responseData.details || "请稍后再试"}`);
-        throw new Error(responseData.details || "诊断失败");
+        throw new Error(
+          responseData?.message ||
+            responseData?.details ||
+            responseData?.error ||
+            `诊断失败（HTTP ${res.status}）`
+        );
+      }
+
+      if (!responseData || typeof responseData !== "object") {
+        throw new Error("诊断返回格式异常，请重试。");
       }
 
       localStorage.setItem("latest_diagnosis", JSON.stringify(responseData));
       router.push("/report");
     } catch (error) {
       console.error("Diagnosis Error:", error);
-      setState("INTERACTING");
+      if (error instanceof DOMException && error.name === "AbortError") {
+        showFlowError(`诊断超时（${DIAGNOSIS_TIMEOUT_MS / 1000}秒），请重试或返回重新上传。`);
+      } else if (error instanceof Error) {
+        showFlowError(error.message || "诊断失败，请稍后再试。");
+      } else {
+        showFlowError("诊断失败，请稍后再试。");
+      }
     } finally {
+      window.clearTimeout(timeoutId);
       setIsProcessing(false);
       processingLockRef.current = false;
     }
+  };
+
+  const handleRetry = () => {
+    const retryPoint = (stuckPoint || STUCK_OPTIONS[0]).trim();
+    if (!retryPoint) return;
+    void handleStartDiagnosis(retryPoint);
   };
 
   return (
@@ -121,14 +191,49 @@ function ProcessingPageContent() {
         <h2 className="text-2xl font-black text-slate-800 leading-snug min-h-[4rem]">{STEPS[state]}</h2>
         {isProcessing ? <p className="text-sm font-bold text-[#667EEA]">陈老师正在全神贯注诊断中...</p> : null}
 
+        {errorMessage ? (
+          <section
+            data-testid="processing-error-card"
+            className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 text-left"
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-red-500 mt-0.5 shrink-0" size={18} />
+              <p className="text-sm font-bold text-red-700 leading-relaxed">{errorMessage}</p>
+            </div>
+            <div className="grid gap-2 mt-4 md:grid-cols-2">
+              <button
+                data-testid="processing-retry"
+                onClick={handleRetry}
+                disabled={isProcessing || !canDiagnose}
+                className="py-2.5 rounded-xl bg-red-600 text-white font-bold disabled:opacity-40"
+              >
+                重试
+              </button>
+              <button
+                data-testid="processing-return"
+                onClick={() => router.push("/")}
+                className="py-2.5 rounded-xl bg-white border border-red-300 text-red-700 font-bold"
+              >
+                返回重新上传
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {!canDiagnose && !isProcessing ? (
+          <p className="text-xs text-slate-500">请先返回上传一张错题图片，再继续诊断。</p>
+        ) : null}
+
         {state === "INTERACTING" && (
           <div className="grid gap-3 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
             {STUCK_OPTIONS.map((opt) => (
               <button
                 key={opt}
                 onClick={() => handleStartDiagnosis(opt)}
-                disabled={isProcessing}
-                className={`w-full py-4 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-2xl text-left border border-slate-100 transition-all flex justify-between items-center group ${isProcessing ? "opacity-50 cursor-not-allowed" : "active:scale-95"}`}
+                disabled={isProcessing || !canDiagnose}
+                className={`w-full py-4 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-2xl text-left border border-slate-100 transition-all flex justify-between items-center group ${
+                  isProcessing || !canDiagnose ? "opacity-50 cursor-not-allowed" : "active:scale-95"
+                }`}
               >
                 {opt}
                 <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -140,11 +245,11 @@ function ProcessingPageContent() {
                 className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 value={stuckPoint}
                 onChange={(e) => setStuckPoint(e.target.value)}
-                disabled={isProcessing}
+                disabled={isProcessing || !canDiagnose}
               />
               <button
                 onClick={() => handleStartDiagnosis(stuckPoint)}
-                disabled={!stuckPoint.trim() || isProcessing}
+                disabled={!stuckPoint.trim() || isProcessing || !canDiagnose}
                 className="bg-slate-900 text-white px-6 rounded-xl font-bold disabled:opacity-30"
               >
                 {isProcessing ? "诊断中..." : "确定"}

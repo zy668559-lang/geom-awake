@@ -17,8 +17,13 @@ export default function Home() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        const sid = `sid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        localStorage.setItem("pending_geometry_sid", sid);
         localStorage.setItem("pending_geometry_image", reader.result as string);
-        router.push("/processing");
+        router.push(`/processing?sid=${encodeURIComponent(sid)}`);
+      };
+      reader.onerror = () => {
+        window.alert("图片读取失败，请换一张清晰图片重试。");
       };
       reader.readAsDataURL(file);
     }

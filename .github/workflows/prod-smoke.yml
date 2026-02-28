@@ -34,7 +34,7 @@ jobs:
       - name: Run production smoke e2e
         env:
           PLAYWRIGHT_BASE_URL: ${{ github.event.inputs.base_url || 'https://geometry-mvp.vercel.app' }}
-        run: npx playwright test tests/e2e/processing-flow.spec.ts --project=chromium --grep "within 60s must navigate or show explicit error"
+        run: npx playwright test tests/e2e/prod-analyze.spec.ts --project=chromium
 
       - name: Upload Playwright artifacts (on failure)
         if: failure()

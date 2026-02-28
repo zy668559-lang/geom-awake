@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { identifyGeometry } from "@/lib/gemini";
 
+export const maxDuration = 60;
+
 type AnalyzeResult = {
   stuckPoint: string;
   rootCause: string;
@@ -153,7 +155,10 @@ export async function POST(req: Request) {
 
     if (!imageBase64) {
       console.warn(`⚠️ [Step 1 Error][${requestId}] Missing imageBase64`);
-      return NextResponse.json({ error: "请上传题目图片" }, { status: 400 });
+      return NextResponse.json(
+        { error: "请上传题目图片", message: "缺少上传图片，请返回重新上传后再试。" },
+        { status: 400 }
+      );
     }
 
     const payloadForCache = {
@@ -280,6 +285,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error: error?.message?.includes("校验失败") ? "环境校验中断" : "诊断失败",
+        message: error?.message || "诊断服务暂时不可用，请稍后重试。",
         details: error?.message || String(error),
         requestId,
         errData: error?.rawData || null

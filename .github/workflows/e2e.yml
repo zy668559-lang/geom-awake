@@ -4,7 +4,9 @@ on:
   pull_request:
     branches: [main, master]
   push:
-    branches: [fix/processing-stuck]
+    branches:
+      - fix/processing-stuck
+      - fix/processing-stuck-v2
 
 jobs:
   e2e:

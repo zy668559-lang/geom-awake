@@ -1,5 +1,5 @@
+﻿import crypto from "crypto";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { identifyGeometry } from "@/lib/gemini";
 
 export const maxDuration = 60;
@@ -29,13 +29,13 @@ const ANALYZE_MAX_RETRIES = readIntEnv("ANALYZE_MAX_RETRIES", 3);
 const ANALYZE_BASE_BACKOFF_MS = readIntEnv("ANALYZE_BACKOFF_BASE_MS", 800);
 const ANALYZE_CACHE_TTL_MS = readIntEnv("ANALYZE_CACHE_TTL_MS", 120000);
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function logMethodPath(req: Request, requestId: string, tag: string) {
   const pathname = new URL(req.url).pathname;
   console.log(`[Analyze API][${requestId}] ${tag} method=${req.method} path=${pathname}`);
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function makeAnalyzeCacheKey(payload: {
@@ -67,15 +67,42 @@ function setAnalyzeCache(key: string, value: AnalyzeResult) {
 
 function buildMockResult(stuckPoint: string): AnalyzeResult {
   return {
-    stuckPoint: stuckPoint || "孩子目前的识图卡点是：对图形中的隐形辅助线不敏感。",
-    rootCause: "这道题像是有个机关藏在地基下，关键中点还没被看见。",
-    coachAdvice: "今晚先别急着刷题，先把题里所有已知条件画到图上，再找能连的线。",
+    stuckPoint: stuckPoint || "你不是不会做，是第一步总是踩偏。",
+    rootCause: "你急着一步到位，关键关系没有先排好顺序。",
+    coachAdvice: "今晚先慢半拍：先圈条件，再选一条最短推进线。",
     threeDayPlan: [
-      { day: 1, task: "找3道类似图形，只画辅助线，不写过程。" },
-      { day: 2, task: "挑1道题，完整写出推理链条。" },
-      { day: 3, task: "复盘错因，口述一次完整思路。" },
+      { day: 1, task: "每天只做2题，先练看点-选线。" },
+      { day: 2, task: "每题先写第一句：因为...所以...。" },
+      { day: 3, task: "做完后复盘5分钟：今天到底卡在哪一步。" },
     ],
   };
+}
+
+function safeParseAnalyzeResult(raw: string, fallbackStuckPoint: string, requestId: string): AnalyzeResult {
+  const normalized = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+
+  try {
+    const parsed = JSON.parse(normalized) as AnalyzeResult;
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("parsed payload is not object");
+    }
+
+    if (
+      typeof parsed.stuckPoint !== "string" ||
+      typeof parsed.rootCause !== "string" ||
+      typeof parsed.coachAdvice !== "string" ||
+      !Array.isArray(parsed.threeDayPlan)
+    ) {
+      throw new Error("parsed payload missing required fields");
+    }
+
+    return parsed;
+  } catch (error) {
+    console.warn(
+      `[Analyze API][${requestId}] DeepSeek content is not valid JSON. fallback to mock. reason=${String(error)}`
+    );
+    return buildMockResult(fallbackStuckPoint);
+  }
 }
 
 async function callDeepSeekWithRetry(params: {
@@ -84,9 +111,9 @@ async function callDeepSeekWithRetry(params: {
   apiKey: string;
   model: string;
   systemPrompt: string;
-  messages: unknown[];
+  userPrompt: string;
 }) {
-  const { requestId, baseURL, apiKey, model, systemPrompt, messages } = params;
+  const { requestId, baseURL, apiKey, model, systemPrompt, userPrompt } = params;
   const totalAttempts = ANALYZE_MAX_RETRIES + 1;
 
   for (let attempt = 1; attempt <= totalAttempts; attempt++) {
@@ -101,9 +128,12 @@ async function callDeepSeekWithRetry(params: {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: systemPrompt }, ...(messages || [])],
-        temperature: 0.7,
-        max_tokens: 2000,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.2,
+        max_tokens: 1200,
         response_format: { type: "json_object" },
       }),
     });
@@ -120,7 +150,7 @@ async function callDeepSeekWithRetry(params: {
     const errText = await resp.text();
     const isRetryable = RETRYABLE_STATUSES.has(resp.status);
     console.warn(
-      `${attemptTag} Failed with ${resp.status}. Retryable=${isRetryable}. Body=${errText.slice(0, 300)}`
+      `${attemptTag} failed with ${resp.status}. retryable=${isRetryable}. body=${errText.slice(0, 300)}`
     );
 
     if (!isRetryable || attempt === totalAttempts) {
@@ -132,7 +162,7 @@ async function callDeepSeekWithRetry(params: {
 
     const jitter = Math.floor(Math.random() * 200);
     const backoffMs = ANALYZE_BASE_BACKOFF_MS * 2 ** (attempt - 1) + jitter;
-    console.log(`${attemptTag} Backing off for ${backoffMs}ms before retry.`);
+    console.log(`${attemptTag} backoff ${backoffMs}ms before retry.`);
     await sleep(backoffMs);
   }
 
@@ -141,121 +171,58 @@ async function callDeepSeekWithRetry(params: {
 
 export async function POST(req: Request) {
   const requestId = Math.random().toString(36).substring(2, 10).toUpperCase();
-  const startTime = Date.now();
+  const startedAt = Date.now();
   logMethodPath(req, requestId, "incoming");
-  console.log(`🚀 [Analyze API][${requestId}] Request Started at ${new Date().toISOString()}`);
-
-  // 强制确认 Key 存在
-  console.log(`🔥🔥🔥 [Analyze API Key Check][${requestId}] Gemini Key 前五位:`, process.env.GEMINI_API_KEY?.substring(0, 5) || 'NULL!!!');
 
   try {
-    const body = await req.json();
-    const { imageBase64, stuckPoint, messages } = body as {
-      imageBase64?: string;
-      stuckPoint?: string;
-      messages?: unknown[];
-    };
-    const imgSizeKB = imageBase64 ? Math.round(imageBase64.length / 1024) : 0;
-
-    console.log(`--- [Step 1][${requestId}] Image Received. Size: ${imgSizeKB}KB. Stuck: ${stuckPoint} ---`);
+    const body = await req.json().catch(() => null);
+    const imageBase64 = body?.imageBase64 as string | undefined;
+    const stuckPoint = (body?.stuckPoint as string | undefined) || "";
+    const messages = Array.isArray(body?.messages) ? body.messages : [];
 
     if (!imageBase64) {
-      console.warn(`⚠️ [Step 1 Error][${requestId}] Missing imageBase64`);
       return NextResponse.json(
         { error: "请上传题目图片", message: "缺少上传图片，请返回重新上传后再试。" },
         { status: 400 }
       );
     }
 
-    const payloadForCache = {
-      imageBase64,
-      stuckPoint: stuckPoint || "",
-      messages: Array.isArray(messages) ? messages : [],
-    };
+    const payloadForCache = { imageBase64, stuckPoint, messages };
     const cacheKey = makeAnalyzeCacheKey(payloadForCache);
+
     const cached = getAnalyzeCacheHit(cacheKey);
     if (cached) {
-      console.log(
-        `[Analyze API][${requestId}] Cache hit for key=${cacheKey.slice(
-          0,
-          8
-        )}, ttl=${ANALYZE_CACHE_TTL_MS}ms`
-      );
+      console.log(`[Analyze API][${requestId}] cache hit key=${cacheKey.slice(0, 8)}`);
       return NextResponse.json(cached, { headers: { "x-analyze-cache": "HIT" } });
     }
 
     const runAnalyze = async (): Promise<AnalyzeResult> => {
-      // 0. Mock or local fallback check
       const mockMode = process.env.MOCK_MODE === "true" || process.env.FORCE_MOCK_ANALYZE === "true";
       const missingRequiredKeys = !process.env.GEMINI_API_KEY || !process.env.DEEPSEEK_API_KEY;
       if (mockMode || missingRequiredKeys) {
         const reason = mockMode ? "MOCK_MODE enabled" : "Gemini/DeepSeek key missing";
-        console.log(`[Analyze API][${requestId}] Mock fallback enabled (${reason}).`);
-        const mock = buildMockResult(stuckPoint || "");
+        console.log(`[Analyze API][${requestId}] mock fallback enabled (${reason}).`);
+        const mock = buildMockResult(stuckPoint);
         setAnalyzeCache(cacheKey, mock);
         return mock;
       }
 
-      // 2. 调用 Gemini 识图
-      console.log(`--- [Step 2][${requestId}] Triggering Gemini Vision ---`);
       const geometryDescription = await identifyGeometry(imageBase64);
-      console.log(
-        `--- [Step 3][${requestId}] Gemini recognition success! Result length: ${geometryDescription.length} ---`
-      );
 
-      // 3. 调用 DeepSeek 推理
-      console.log(`--- [Step 4][${requestId}] Handing over to DeepSeek ---`);
-      const apiKey = process.env.DEEPSEEK_API_KEY;
-      const baseURL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
+      const systemPrompt =
+        "你是初中几何教练。请只输出 JSON，字段必须包含: stuckPoint, rootCause, coachAdvice, threeDayPlan(长度3，每项含day/task)。";
+      const userPrompt = `题目描述: ${geometryDescription}\n学生卡点: ${stuckPoint || "未提供"}`;
 
-      if (!apiKey) {
-        console.error(`❌ [Step 4 Error][${requestId}] DEEPSEEK_API_KEY is missing!`);
-        throw new Error("DEEPSEEK_API_KEY is not configured");
-      }
-
-      const systemPrompt = `
-你是陈老师，一位有20年经验教初中几何的教练。你的风格是：
-1. **邻居大姐口吻**：亲切、通俗、接地气。严禁使用"掌握薄弱"、"逻辑断层"、"知识点缺失"等术语。
-2. **灵魂诊断**：你要根据图形描述和孩子觉得难的地方（卡点），找出那个最关键的"隐形陷阱"。
-3. **具体建议**：给出一个具体的、今晚就能做的3天练习计划。
-
-**必须使用的语气示例**：
-- "这道题有个隐形陷阱，孩子没瞧见。"
-- "这题就像走路绕了远路，其实有个近道孩子还没发现。"
-- "咱们不急，先找那个躲起来的中点。"
-
-**输入信息**：
-- 题目描述：${geometryDescription}
-- 孩子觉得难在哪：${stuckPoint || "未提供"}
-
-请返回 JSON 格式（严禁返回 Markdown 代码块，只返回纯 JSON 字符串）：
-{
-  "stuckPoint": "陈老师发现的真正卡点（一句话，口语化）",
-  "rootCause": "为什么孩子会卡在这（邻居大姐口吻，例如：孩子眼里没看到那条中位线）",
-  "coachAdvice": "陈老师的口语化建议（咱们这样，今晚...）",
-  "threeDayPlan": [
-    { "day": 1, "task": "具体内容" },
-    { "day": 2, "task": "具体内容" },
-    { "day": 3, "task": "具体内容" }
-  ]
-}
-    `;
-
-      console.log(`--- [Step 5][${requestId}] Calling DeepSeek API with bounded retries ---`);
-      let content = await callDeepSeekWithRetry({
+      const content = await callDeepSeekWithRetry({
         requestId,
-        baseURL,
-        apiKey,
+        baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
+        apiKey: process.env.DEEPSEEK_API_KEY as string,
         model: process.env.DEEPSEEK_MODEL || "deepseek-chat",
         systemPrompt,
-        messages: payloadForCache.messages,
+        userPrompt,
       });
-      console.log(`--- [Step 6][${requestId}] DeepSeek Reasoning Complete ---`);
 
-      // 清洗可能存在的 Markdown 标记
-      content = content.replace(/```json/g, "").replace(/```/g, "").trim();
-
-      const parsed = JSON.parse(content) as AnalyzeResult;
+      const parsed = safeParseAnalyzeResult(content, stuckPoint, requestId);
       setAnalyzeCache(cacheKey, parsed);
       return parsed;
     };
@@ -266,38 +233,44 @@ export async function POST(req: Request) {
       runAnalyze().finally(() => {
         inFlightAnalyze.delete(cacheKey);
       });
+
     if (!existingInFlight) {
       inFlightAnalyze.set(cacheKey, analyzePromise);
     } else {
-      console.log(`[Analyze API][${requestId}] Coalesced with in-flight request key=${cacheKey.slice(0, 8)}.`);
+      console.log(`[Analyze API][${requestId}] coalesced in-flight key=${cacheKey.slice(0, 8)}`);
     }
 
-    const result = await analyzePromise;
-    const duration = Date.now() - startTime;
-    console.log(`🎉 [Analyze API][${requestId}] Success! Duration: ${duration}ms`);
-    return NextResponse.json(result, {
-      headers: { "x-analyze-cache": existingInFlight ? "COALESCED" : "MISS" },
-    });
-
+    try {
+      const result = await analyzePromise;
+      return NextResponse.json(result, {
+        headers: { "x-analyze-cache": existingInFlight ? "COALESCED" : "MISS" },
+      });
+    } catch (error: any) {
+      console.error(`[Analyze API][${requestId}] upstream failed, fallback to mock`, error?.message || error);
+      const fallback = buildMockResult(stuckPoint);
+      setAnalyzeCache(cacheKey, fallback);
+      return NextResponse.json(fallback, {
+        status: 200,
+        headers: {
+          "x-analyze-cache": "FALLBACK",
+          "x-analyze-fallback": "UPSTREAM_ERROR",
+        },
+      });
+    }
   } catch (error: any) {
-    const duration = Date.now() - startTime;
-    console.error(`🚨🚨🚨 [Analyze API FATAL ERROR][${requestId}] Duration: ${duration}ms 🚨🚨🚨`);
-    console.error(`[${requestId}] Error Name:`, error?.name);
-    console.error(`[${requestId}] Error Message:`, error?.message);
-    if (error?.rawData) {
-      console.error(`[${requestId}] Raw Error Data included in response.`);
-    }
-
+    console.error(`[Analyze API][${requestId}] fatal`, error?.message || error);
     return NextResponse.json(
       {
-        error: error?.message?.includes("校验失败") ? "环境校验中断" : "诊断失败",
+        error: "诊断失败",
         message: error?.message || "诊断服务暂时不可用，请稍后重试。",
         details: error?.message || String(error),
         requestId,
-        errData: error?.rawData || null
       },
-      { status: error?.status || 500 }
+      { status: 500 }
     );
+  } finally {
+    const duration = Date.now() - startedAt;
+    console.log(`[Analyze API][${requestId}] completed in ${duration}ms`);
   }
 }
 

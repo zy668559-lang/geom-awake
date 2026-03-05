@@ -1,7 +1,8 @@
-const TARGET_MAX_EDGE = 1600;
+const MAX_EDGE = 1600;
+const COMPRESS_TRIGGER_BYTES = 1_500_000;
 const TARGET_MAX_BYTES = 900_000;
 const HARD_MAX_BYTES = 1_000_000;
-const START_QUALITY = 0.75;
+const START_QUALITY = 0.7;
 const MIN_QUALITY = 0.45;
 const QUALITY_STEP = 0.05;
 
@@ -38,10 +39,7 @@ function blobToImageElement(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
-async function toCanvas(
-  file: File,
-  maxEdge: number
-): Promise<{ canvas: HTMLCanvasElement; width: number; height: number }> {
+async function toCanvas(file: File, maxEdge: number): Promise<{ canvas: HTMLCanvasElement; width: number; height: number }> {
   const source = await blobToImageElement(file);
   const width = source.width;
   const height = source.height;
@@ -53,7 +51,6 @@ async function toCanvas(
   const canvas = document.createElement("canvas");
   canvas.width = targetWidth;
   canvas.height = targetHeight;
-
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("当前浏览器不支持图片压缩");
@@ -79,12 +76,25 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
   });
 }
 
-export async function preprocessImageForAnalyze(
-  file: File,
-  onProgress?: (text: string) => void
-): Promise<PreparedImage> {
+export async function preprocessImageForAnalyze(file: File, onProgress?: (text: string) => void): Promise<PreparedImage> {
+  const shouldCompress =
+    file.size > COMPRESS_TRIGGER_BYTES ||
+    file.size > TARGET_MAX_BYTES ||
+    file.type !== "image/jpeg";
+
+  if (!shouldCompress) {
+    const dataUrl = await readAsDataUrl(file);
+    return {
+      file,
+      dataUrl,
+      width: 0,
+      height: 0,
+      bytes: file.size,
+    };
+  }
+
   onProgress?.("正在压缩图片...");
-  const { canvas, width, height } = await toCanvas(file, TARGET_MAX_EDGE);
+  const { canvas, width, height } = await toCanvas(file, MAX_EDGE);
 
   let quality = START_QUALITY;
   let jpegBlob = await canvasToBlob(canvas, quality);

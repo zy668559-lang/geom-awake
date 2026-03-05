@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, ArrowRight, Brain, Camera, Images, Loader2, MessageCircle, Search } from "lucide-react";
 import { preprocessImageForAnalyze } from "@/lib/client/image-preprocess";
@@ -31,6 +31,8 @@ const DEMO_DIAGNOSIS_FIXTURE = {
     { day: 2, task: "每题先写第一句：因为...所以...。" },
     { day: 3, task: "做完后复盘5分钟：今天到底卡在哪一步。" },
   ],
+  MODEL_FAILED: false,
+  source: "fallback",
 };
 
 function createSessionId() {
@@ -42,6 +44,14 @@ function inferCauseFromNote(note: string): string {
   if (/条件|关系|因为|所以/.test(note)) return "condition_relation";
   if (/证明|推理|全等/.test(note)) return "proof_writing";
   return "draw_line";
+}
+
+function estimateBytesFromBase64(input: string): number {
+  const raw = input.includes(",") ? input.split(",").slice(1).join(",") : input;
+  const len = raw.length;
+  if (!len) return 0;
+  const padding = raw.endsWith("==") ? 2 : raw.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((len * 3) / 4) - padding);
 }
 
 function dataUrlToFile(dataUrl: string, fileName: string): File {
@@ -57,6 +67,13 @@ function dataUrlToFile(dataUrl: string, fileName: string): File {
   return new File([bytes], fileName, { type: mimeType });
 }
 
+function prettyBytes(size: number): string {
+  if (!Number.isFinite(size) || size <= 0) return "0 B";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 function ProcessingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -68,19 +85,30 @@ function ProcessingPageContent() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedFileName, setSelectedFileName] = useState("");
+  const [selectedFileSize, setSelectedFileSize] = useState(0);
 
   const hasInitialized = useRef(false);
   const processingLockRef = useRef(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const albumInputRef = useRef<HTMLInputElement>(null);
   const demoMode = searchParams.get("demo") === "1";
-  const canDiagnose = demoMode || Boolean(imageBase64);
+
+  const hasValidImage = demoMode || (Boolean(imageBase64) && selectedFileSize > 0);
+  const fileMetaText = useMemo(() => {
+    if (!selectedFileName && selectedFileSize <= 0) return "";
+    return `${selectedFileName || "已选图片"} · ${prettyBytes(selectedFileSize)}`;
+  }, [selectedFileName, selectedFileSize]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     const pendingImage = localStorage.getItem("pending_geometry_image");
+    const pendingName = localStorage.getItem("pending_geometry_file_name") || "";
+    const pendingSizeRaw = Number.parseInt(localStorage.getItem("pending_geometry_file_size") || "0", 10);
+    const pendingSize = Number.isFinite(pendingSizeRaw) && pendingSizeRaw > 0 ? pendingSizeRaw : estimateBytesFromBase64(pendingImage || "");
+
     const sidFromQuery = searchParams.get("sid");
     const sidFromStorage = localStorage.getItem("pending_geometry_sid");
     const resolvedSid = sidFromQuery || sidFromStorage || createSessionId();
@@ -96,6 +124,8 @@ function ProcessingPageContent() {
 
     if (pendingImage || demoMode) {
       setImageBase64(pendingImage || "demo-image");
+      setSelectedFileName(pendingName || "uploaded-image");
+      setSelectedFileSize(demoMode ? 1 : pendingSize);
       setState("INTERACTING");
       setErrorMessage("");
       return;
@@ -122,14 +152,30 @@ function ProcessingPageContent() {
 
   const handleImageSelected = async (file: File | undefined) => {
     if (!file || isPreparingImage || isProcessing) return;
+
+    if (!Number.isFinite(file.size) || file.size <= 0) {
+      showFlowError("图片文件无效，请重新选择。");
+      return;
+    }
+
     setIsPreparingImage(true);
     setPrepareText("正在处理图片...");
     setErrorMessage("");
 
     try {
       const prepared = await preprocessImageForAnalyze(file, (text) => setPrepareText(text));
+      if (!prepared.file || prepared.file.size <= 0 || !prepared.dataUrl) {
+        showFlowError("图片处理失败，请重新上传。");
+        return;
+      }
+
       localStorage.setItem("pending_geometry_image", prepared.dataUrl);
+      localStorage.setItem("pending_geometry_file_name", prepared.file.name);
+      localStorage.setItem("pending_geometry_file_size", String(prepared.file.size));
+
       setImageBase64(prepared.dataUrl);
+      setSelectedFileName(prepared.file.name);
+      setSelectedFileSize(prepared.file.size);
       setState("INTERACTING");
       setPrepareText("");
     } catch (error: any) {
@@ -156,8 +202,8 @@ function ProcessingPageContent() {
 
     const finalPoint = (point || stuckPoint).trim();
     if (!finalPoint) return;
-    if (!canDiagnose) {
-      showFlowError("缺少题目图片，不能开始诊断。请先上传图片。");
+    if (!hasValidImage) {
+      showFlowError("请先上传有效图片（文件不能为空）。");
       return;
     }
 
@@ -168,9 +214,7 @@ function ProcessingPageContent() {
     setState("REASONING");
 
     const abortController = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      abortController.abort();
-    }, DIAGNOSIS_TIMEOUT_MS);
+    const timeoutId = window.setTimeout(() => abortController.abort(), DIAGNOSIS_TIMEOUT_MS);
 
     try {
       if (demoMode) {
@@ -186,7 +230,11 @@ function ProcessingPageContent() {
       }
 
       const cause = inferCauseFromNote(finalPoint);
-      const imageFile = dataUrlToFile(imageBase64 as string, `geometry-${sessionId || Date.now().toString(36)}.png`);
+      const imageFile = dataUrlToFile(imageBase64 as string, `geometry-${sessionId || Date.now().toString(36)}.jpg`);
+      if (!imageFile || imageFile.size <= 0) {
+        throw new Error("上传图片为空，请重新上传。");
+      }
+
       const formData = new FormData();
       formData.append("image", imageFile);
       formData.append("cause", cause);
@@ -204,13 +252,8 @@ function ProcessingPageContent() {
         headers,
       });
 
-      let responseData: any = null;
       const rawBody = await res.text();
-      try {
-        responseData = rawBody ? JSON.parse(rawBody) : null;
-      } catch {
-        responseData = { message: rawBody };
-      }
+      const responseData = rawBody ? JSON.parse(rawBody) : null;
 
       if (!res.ok || responseData?.errorCode) {
         throw new Error(
@@ -222,12 +265,7 @@ function ProcessingPageContent() {
         );
       }
 
-      if (
-        !responseData ||
-        typeof responseData !== "object" ||
-        typeof responseData.stuckPoint !== "string" ||
-        typeof responseData.rootCause !== "string"
-      ) {
+      if (!responseData || typeof responseData !== "object") {
         throw new Error("诊断返回格式异常，请重试。");
       }
 
@@ -257,14 +295,7 @@ function ProcessingPageContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={onCameraChange}
-      />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onCameraChange} />
       <input ref={albumInputRef} type="file" accept="image/*" className="hidden" onChange={onAlbumChange} />
 
       <div className="relative mb-12">
@@ -288,11 +319,12 @@ function ProcessingPageContent() {
           </div>
         ) : null}
 
+        {fileMetaText ? (
+          <p className="text-xs font-bold text-slate-500">当前图片：{fileMetaText}</p>
+        ) : null}
+
         {errorMessage ? (
-          <section
-            data-testid="processing-error-card"
-            className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 text-left"
-          >
+          <section data-testid="processing-error-card" className="w-full rounded-2xl border border-red-200 bg-red-50 p-4 text-left">
             <div className="flex items-start gap-3">
               <AlertTriangle className="text-red-500 mt-0.5 shrink-0" size={18} />
               <p className="text-sm font-bold text-red-700 leading-relaxed">{errorMessage}</p>
@@ -301,7 +333,7 @@ function ProcessingPageContent() {
               <button
                 data-testid="processing-retry"
                 onClick={handleRetry}
-                disabled={isProcessing || !canDiagnose}
+                disabled={isProcessing || !hasValidImage}
                 className="py-2.5 rounded-xl bg-red-600 text-white font-bold disabled:opacity-40"
               >
                 重试
@@ -317,7 +349,7 @@ function ProcessingPageContent() {
           </section>
         ) : null}
 
-        {!canDiagnose && !isProcessing && !demoMode ? (
+        {!hasValidImage && !isProcessing && !demoMode ? (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">先传一张题图，再开始诊断。</p>
             <div className="grid gap-2 md:grid-cols-2">
@@ -349,9 +381,9 @@ function ProcessingPageContent() {
               <button
                 key={opt}
                 onClick={() => handleStartDiagnosis(opt)}
-                disabled={isProcessing || !canDiagnose}
+                disabled={isProcessing || !hasValidImage}
                 className={`w-full py-4 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-2xl text-left border border-slate-100 transition-all flex justify-between items-center group ${
-                  isProcessing || !canDiagnose ? "opacity-50 cursor-not-allowed" : "active:scale-95"
+                  isProcessing || !hasValidImage ? "opacity-50 cursor-not-allowed" : "active:scale-95"
                 }`}
               >
                 {opt}
@@ -364,11 +396,11 @@ function ProcessingPageContent() {
                 className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 value={stuckPoint}
                 onChange={(e) => setStuckPoint(e.target.value)}
-                disabled={isProcessing || !canDiagnose}
+                disabled={isProcessing || !hasValidImage}
               />
               <button
                 onClick={() => handleStartDiagnosis(stuckPoint)}
-                disabled={!stuckPoint.trim() || isProcessing || !canDiagnose}
+                disabled={!stuckPoint.trim() || isProcessing || !hasValidImage}
                 className="bg-slate-900 text-white px-6 rounded-xl font-bold disabled:opacity-30"
               >
                 {isProcessing ? "诊断中..." : "确定"}
@@ -382,9 +414,7 @@ function ProcessingPageContent() {
         {["IDENTIFYING", "INTERACTING", "REASONING"].map((step) => (
           <div
             key={step}
-            className={`h-1.5 rounded-full transition-all duration-500 ${
-              state === step ? "w-8 bg-slate-800" : "w-1.5 bg-slate-200"
-            }`}
+            className={`h-1.5 rounded-full transition-all duration-500 ${state === step ? "w-8 bg-slate-800" : "w-1.5 bg-slate-200"}`}
           />
         ))}
       </div>
@@ -394,9 +424,7 @@ function ProcessingPageContent() {
 
 export default function ProcessingPage() {
   return (
-    <Suspense
-      fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500">加载中...</div>}
-    >
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500">加载中...</div>}>
       <ProcessingPageContent />
     </Suspense>
   );

@@ -12,6 +12,10 @@ type AnalyzeSuccess = {
   threeDayPlan: Array<{ day: number; task: string }>;
   inputHashTail: string;
   fallback: boolean;
+  source: "model" | "cache" | "fallback";
+  MODEL_FAILED: boolean;
+  verdict: string;
+  evidenceBullets: [string, string];
 };
 
 type AnalyzeErrorPayload = {
@@ -107,27 +111,26 @@ function setAnalyzeCache(key: string, value: AnalyzeSuccess) {
   });
 }
 
-function buildMockSuccess(input: { cause: string; note: string; inputHashTail: string }): AnalyzeSuccess {
-  const causeLabel =
-    input.cause === "condition_relation"
-      ? "条件关系"
-      : input.cause === "proof_writing"
-        ? "证明书写"
-        : "画线切入";
-  const noteSummary = (input.note || "未填写").slice(0, 60);
-  return {
-    stuckPoint: `你现在最卡的是：${causeLabel}这里容易断。`,
-    rootCause: `结合你写的“${noteSummary}”，我先判断是第一步关系没排顺。`,
-    coachAdvice: "先做3分钟：圈已知 -> 画一条推进线 -> 写第一句因为所以。",
-    riskWarning: "这步不修，后面证明会一直断，考试最少丢5到10分。",
-    threeDayPlan: [
-      { day: 1, task: "只练开头第一步，不追求整题做完。" },
-      { day: 2, task: "每题固定写一句因为所以，先写顺关系。" },
-      { day: 3, task: "复盘最常断的那一步，明天优先再练。" },
-    ],
-    inputHashTail: input.inputHashTail,
-    fallback: true,
-  };
+function ensureEvidenceBullets(value: unknown): [string, string] {
+  if (!Array.isArray(value) || value.length < 2) {
+    throw new AnalyzeApiError(
+      502,
+      "MODEL_RESPONSE_INVALID",
+      "模型返回缺少关键证据，请重试。",
+      "请换一张更清晰的题图，并把卡住的草稿圈出来再试。"
+    );
+  }
+  const first = typeof value[0] === "string" ? value[0].trim() : "";
+  const second = typeof value[1] === "string" ? value[1].trim() : "";
+  if (!first || !second) {
+    throw new AnalyzeApiError(
+      502,
+      "MODEL_RESPONSE_INVALID",
+      "模型返回缺少关键证据，请重试。",
+      "请换一张更清晰的题图，并把卡住的草稿圈出来再试。"
+    );
+  }
+  return [first, second];
 }
 
 function parseThreeDayPlan(value: unknown): Array<{ day: number; task: string }> {
@@ -160,7 +163,44 @@ function parseThreeDayPlan(value: unknown): Array<{ day: number; task: string }>
   return normalized;
 }
 
-function safeParseGeminiJson(raw: string, inputHashTail: string): AnalyzeSuccess {
+function buildFallbackSuccess(input: {
+  cause: string;
+  note: string;
+  inputHashTail: string;
+  reason: string;
+  isMock?: boolean;
+}): AnalyzeSuccess {
+  const causeLabel =
+    input.cause === "condition_relation"
+      ? "条件关系"
+      : input.cause === "proof_writing"
+        ? "证明书写"
+        : "画线切入";
+  const noteSummary = (input.note || "未填写").slice(0, 80);
+
+  return {
+    stuckPoint: `你现在最卡的是：${causeLabel}这一步经常断掉。`,
+    rootCause: `结合你写的“${noteSummary}”，我判断是关系没排顺就急着往下写。`,
+    coachAdvice: "先做3分钟：圈已知、画一条推进线、写第一句因为所以。",
+    riskWarning: "这步不修，后面的证明题会持续丢分。",
+    verdict: "这题不是不会，是关键一步总掉链子。",
+    evidenceBullets: [
+      "题干/图形线索：图中已知关系和目标结论没有先对应起来。",
+      "草稿线索：步骤写到一半中断，缺少关键过渡句。",
+    ],
+    threeDayPlan: [
+      { day: 1, task: "只练开头第一步，不追求整题做完。" },
+      { day: 2, task: "每题固定写一句因为所以，先写顺关系。" },
+      { day: 3, task: "复盘最常断的那一步，明天优先再练。" },
+    ],
+    inputHashTail: input.inputHashTail,
+    fallback: true,
+    source: "fallback",
+    MODEL_FAILED: !input.isMock,
+  };
+}
+
+function safeParseModelJson(raw: string, inputHashTail: string): AnalyzeSuccess {
   const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
   let parsed: any;
   try {
@@ -192,54 +232,55 @@ function safeParseGeminiJson(raw: string, inputHashTail: string): AnalyzeSuccess
       ? parsed.riskWarning.trim()
       : "这步不修，后面的证明题会持续丢分。";
 
+  const verdict =
+    typeof parsed?.verdict === "string" && parsed.verdict.trim().length > 0
+      ? parsed.verdict.trim()
+      : `这题主要卡在“${parsed.stuckPoint.trim()}”。`;
+
   return {
     stuckPoint: parsed.stuckPoint.trim(),
     rootCause: parsed.rootCause.trim(),
     coachAdvice: parsed.coachAdvice.trim(),
     riskWarning,
-    threeDayPlan: parseThreeDayPlan(parsed.threeDayPlan),
+    verdict,
+    evidenceBullets: ensureEvidenceBullets(parsed?.evidenceBullets),
+    threeDayPlan: parseThreeDayPlan(parsed?.threeDayPlan),
     inputHashTail,
     fallback: false,
+    source: "model",
+    MODEL_FAILED: false,
   };
 }
 
-function mapGeminiError(error: any): AnalyzeApiError {
+function mapModelError(error: any): AnalyzeApiError {
   const status = Number(error?.status || 500);
   if (status === 403) {
     return new AnalyzeApiError(
       503,
-      "GEMINI_FORBIDDEN",
+      "VISION_FORBIDDEN",
       "诊断服务密钥无效或权限不足。",
-      "请检查生产环境 GEMINI_API_KEY 配置。"
+      "请检查生产环境 DASHSCOPE_API_KEY 或 GEMINI_API_KEY。"
     );
   }
   if (status === 429) {
     return new AnalyzeApiError(
       429,
-      "GEMINI_QUOTA_LIMIT",
+      "VISION_QUOTA_LIMIT",
       "当前诊断请求过多，服务暂时限流。",
       "请稍后重试；若频繁出现，请更换更小图片并错峰使用。"
-    );
-  }
-  if (status === 504) {
-    return new AnalyzeApiError(
-      504,
-      "GEMINI_TIMEOUT",
-      "诊断超时，图片处理未完成。",
-      "请重试一次，或先裁剪题目区域再上传。"
     );
   }
   if (status >= 500) {
     return new AnalyzeApiError(
       503,
-      "GEMINI_UPSTREAM_ERROR",
+      "VISION_UPSTREAM_ERROR",
       "诊断服务暂时不可用。",
       "请稍后重试，或先检查服务状态。"
     );
   }
   return new AnalyzeApiError(
     500,
-    "GEMINI_UNKNOWN_ERROR",
+    "VISION_UNKNOWN_ERROR",
     "诊断服务发生未知错误。",
     "请稍后重试。"
   );
@@ -294,6 +335,7 @@ async function parseAnalyzePayload(req: Request): Promise<ParseAnalyzePayload> {
     const imageBase64 = imageBuffer.toString("base64");
     const mimeType = imageEntry.type || "image/jpeg";
     const inputHash = buildInputHash(imageBuffer, note, cause);
+
     return {
       imageBase64,
       mimeType,
@@ -315,6 +357,7 @@ async function parseAnalyzePayload(req: Request): Promise<ParseAnalyzePayload> {
   const imageBuffer = Buffer.from(base64Raw, "base64");
   ensureImageSize(imageBuffer);
   const inputHash = buildInputHash(imageBuffer, note, cause);
+
   return {
     imageBase64: base64Raw,
     mimeType: "image/jpeg",
@@ -343,7 +386,13 @@ export async function POST(req: Request) {
     const cacheHit = getAnalyzeCacheHit(payload.inputHash);
     if (cacheHit) {
       console.log(`[Analyze API][${requestId}] cache hit hash=${payload.inputHash.slice(0, 8)}`);
-      return NextResponse.json(cacheHit, { headers: { "x-analyze-cache": "HIT" } });
+      return NextResponse.json(
+        {
+          ...cacheHit,
+          source: "cache",
+        } satisfies AnalyzeSuccess,
+        { headers: { "x-analyze-cache": "HIT" } }
+      );
     }
 
     const runAnalyze = async (): Promise<AnalyzeSuccess> => {
@@ -353,33 +402,42 @@ export async function POST(req: Request) {
         process.env.FORCE_MOCK_ANALYZE === "true";
 
       if (forceMock) {
-        return buildMockSuccess({
+        return buildFallbackSuccess({
           cause: payload.cause,
           note: payload.note,
           inputHashTail,
+          reason: "FORCE_MOCK",
+          isMock: true,
         });
       }
 
       if (!process.env.DASHSCOPE_API_KEY && !process.env.GEMINI_API_KEY) {
-        throw new AnalyzeApiError(
-          503,
-          "VISION_KEY_MISSING",
-          "诊断服务密钥未配置，当前无法诊断。",
-          "请检查生产环境 DASHSCOPE_API_KEY 或 GEMINI_API_KEY。"
-        );
+        return buildFallbackSuccess({
+          cause: payload.cause,
+          note: payload.note,
+          inputHashTail,
+          reason: "VISION_KEY_MISSING",
+        });
       }
 
       try {
-        const geminiText = await diagnoseGeometryWithGemini({
+        const modelText = await diagnoseGeometryWithGemini({
           imageBase64: payload.imageBase64,
           mimeType: payload.mimeType,
           cause: payload.cause,
           note: payload.note,
           requestId,
         });
-        return safeParseGeminiJson(geminiText, inputHashTail);
+        return safeParseModelJson(modelText, inputHashTail);
       } catch (error: any) {
-        throw mapGeminiError(error);
+        const mapped = mapModelError(error);
+        console.warn(`[Analyze API][${requestId}] model failed code=${mapped.errorCode} status=${mapped.status}`);
+        return buildFallbackSuccess({
+          cause: payload.cause,
+          note: payload.note,
+          inputHashTail,
+          reason: mapped.errorCode,
+        });
       }
     };
 

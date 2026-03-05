@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,8 +10,12 @@ type DiagnosisData = {
   rootCause: string;
   coachAdvice: string;
   riskWarning?: string;
+  verdict?: string;
+  evidenceBullets?: [string, string] | string[];
   threeDayPlan: { day: number; task: string }[];
   inputHashTail?: string;
+  source?: "model" | "cache" | "fallback";
+  MODEL_FAILED?: boolean;
 };
 
 function inferCause(text: string): RepairCause {
@@ -28,7 +32,6 @@ export default function ReportPage() {
   useEffect(() => {
     const raw = localStorage.getItem("latest_diagnosis");
     if (!raw) return;
-
     try {
       setData(JSON.parse(raw));
     } catch (error) {
@@ -43,7 +46,13 @@ export default function ReportPage() {
 
   const verdict = useMemo(() => {
     if (!data) return "这题不是不会，是关键一步老掉链子。";
+    if (data.verdict && data.verdict.trim()) return data.verdict.trim();
     return `你现在最卡的是“${data.stuckPoint}”，先把这一步修稳，分数就会起来。`;
+  }, [data]);
+
+  const evidenceBullets = useMemo(() => {
+    if (!data?.evidenceBullets || data.evidenceBullets.length < 2) return null;
+    return [String(data.evidenceBullets[0]), String(data.evidenceBullets[1])];
   }, [data]);
 
   const handleGeneratePoster = () => {
@@ -79,8 +88,11 @@ export default function ReportPage() {
           </div>
           <h1 className="text-3xl font-black text-slate-800 leading-snug mb-3">{data.stuckPoint}</h1>
           <p className="text-slate-700 font-bold">陈老师结论：{verdict}</p>
-          {data.inputHashTail ? (
-            <p className="mt-3 text-xs text-slate-400">诊断指纹：{data.inputHashTail}</p>
+          {data.inputHashTail ? <p className="mt-3 text-xs text-slate-400">诊断指纹：{data.inputHashTail}</p> : null}
+          {data.MODEL_FAILED || data.source === "fallback" ? (
+            <p className="mt-3 text-sm font-bold text-amber-600">
+              当前为兜底诊断（MODEL_FAILED），建议换清晰草稿后点击重试获得模型精诊结果。
+            </p>
           ) : null}
         </section>
 
@@ -93,25 +105,17 @@ export default function ReportPage() {
           {isGeneratingPoster ? "正在生成长图..." : "生成诊断长图并保存"}
         </button>
 
-        <section className="bg-white rounded-[32px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-          <div className="p-8 border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">解析总览</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="rounded-2xl bg-red-50 border border-red-100 p-4">
-                <p className="text-sm font-black text-red-600">逻辑断层</p>
-                <p className="text-sm text-slate-700 mt-1">前后步骤接不上，写到一半就断了。</p>
-              </div>
-              <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
-                <p className="text-sm font-black text-amber-600">凭空捏造</p>
-                <p className="text-sm text-slate-700 mt-1">结论看着像对，但中间没依据支撑。</p>
-              </div>
-              <div className="rounded-2xl bg-blue-50 border border-blue-100 p-4">
-                <p className="text-sm font-black text-blue-600">图形没拎清</p>
-                <p className="text-sm text-slate-700 mt-1">平行、垂直、中点没排好顺序就动笔。</p>
-              </div>
-            </div>
-          </div>
+        {evidenceBullets ? (
+          <section className="bg-white rounded-[32px] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">诊断证据</h2>
+            <ul className="space-y-3 text-slate-700 font-medium leading-relaxed">
+              <li>• {evidenceBullets[0]}</li>
+              <li>• {evidenceBullets[1]}</li>
+            </ul>
+          </section>
+        ) : null}
 
+        <section className="bg-white rounded-[32px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
           <div className="p-8 border-b border-slate-100">
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">一句人话版原因</h2>
             <p className="text-xl text-slate-700 font-medium leading-relaxed">{data.rootCause}</p>
@@ -140,27 +144,24 @@ export default function ReportPage() {
           ))}
         </section>
 
+        <section className="bg-white rounded-3xl border border-slate-100 p-5">
+          <h3 className="text-sm font-black text-slate-800 mb-2">草稿上传</h3>
+          <p className="text-sm text-slate-600">写到哪一步卡住，用红笔圈出来拍一张，我来复检。</p>
+        </section>
+
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button
             className="w-full bg-white border border-slate-200 text-slate-700 text-lg font-bold py-5 rounded-[24px] shadow-sm hover:bg-slate-50 transition-all"
-            onClick={() => {
-              const isUnlocked = localStorage.getItem("repair_unlocked") === "true";
-              const nextPath = `/repair?cause=${cause}`;
-              if (isUnlocked) {
-                router.push(nextPath);
-              } else {
-                router.push(`/unlock?next=${encodeURIComponent(nextPath)}`);
-              }
-            }}
+            onClick={() => router.push(`/repair/day/1?cause=${cause}`)}
           >
-            再练一轮
+            开始修复（7天训练）
           </button>
 
           <button
             className="w-full bg-[#1A1A1A] text-white text-lg font-bold py-5 rounded-[24px] shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             onClick={() => router.push(`/upsell?cause=${cause}`)}
           >
-            把分数稳住
+            我想直接稳分（选A/B）
             <ArrowRight size={20} />
           </button>
         </section>

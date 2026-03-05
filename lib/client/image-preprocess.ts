@@ -1,10 +1,12 @@
 const MAX_EDGE = 1280;
 const COMPRESS_TRIGGER_BYTES = 1_500_000;
 const TARGET_MAX_BYTES = 900_000;
-const HARD_MAX_BYTES = 1_000_000;
+const HARD_MAX_BYTES = 900_000;
 const START_QUALITY = 0.7;
 const MIN_QUALITY = 0.45;
 const QUALITY_STEP = 0.05;
+
+const IOS_FORMAT_TIP = "图片为空/格式不支持，请改用相册或把相机格式改为‘兼容性最佳(JPG)’";
 
 export type PreparedImage = {
   file: File;
@@ -12,6 +14,7 @@ export type PreparedImage = {
   width: number;
   height: number;
   bytes: number;
+  mimeType: string;
 };
 
 function readAsDataUrl(blob: Blob): Promise<string> {
@@ -21,6 +24,12 @@ function readAsDataUrl(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error("图片读取失败，请重试"));
     reader.readAsDataURL(blob);
   });
+}
+
+function isHeicLike(file: File): boolean {
+  const name = (file.name || "").toLowerCase();
+  const type = (file.type || "").toLowerCase();
+  return type.includes("heic") || type.includes("heif") || name.endsWith(".heic") || name.endsWith(".heif");
 }
 
 function blobToImageElement(blob: Blob): Promise<HTMLImageElement> {
@@ -33,7 +42,7 @@ function blobToImageElement(blob: Blob): Promise<HTMLImageElement> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("图片解析失败，请换一张再试"));
+      reject(new Error(IOS_FORMAT_TIP));
     };
     img.src = url;
   });
@@ -75,13 +84,14 @@ function isValidFile(file: File | null | undefined): file is File {
   return !!file && Number.isFinite(file.size) && file.size > 0;
 }
 
-async function fallbackToOriginal(file: File): Promise<PreparedImage> {
+async function toPreparedFromFile(file: File): Promise<PreparedImage> {
   if (!isValidFile(file)) {
-    throw new Error("图片文件无效，请重新选择");
+    throw new Error(IOS_FORMAT_TIP);
   }
   if (file.size > HARD_MAX_BYTES) {
     throw new Error("图片过大，请重试/换一张更清晰但更小的照片");
   }
+
   const dataUrl = await readAsDataUrl(file);
   return {
     file,
@@ -89,17 +99,23 @@ async function fallbackToOriginal(file: File): Promise<PreparedImage> {
     width: 0,
     height: 0,
     bytes: file.size,
+    mimeType: file.type || "application/octet-stream",
   };
 }
 
 export async function preprocessImageForAnalyze(file: File, onProgress?: (text: string) => void): Promise<PreparedImage> {
   if (!isValidFile(file)) {
-    throw new Error("图片文件无效，请重新选择");
+    throw new Error(IOS_FORMAT_TIP);
   }
 
-  const shouldCompress = file.size > COMPRESS_TRIGGER_BYTES || file.size > TARGET_MAX_BYTES || file.type !== "image/jpeg";
+  const shouldCompress =
+    file.size > COMPRESS_TRIGGER_BYTES ||
+    file.size > TARGET_MAX_BYTES ||
+    file.type !== "image/jpeg" ||
+    isHeicLike(file);
+
   if (!shouldCompress) {
-    return fallbackToOriginal(file);
+    return toPreparedFromFile(file);
   }
 
   onProgress?.("正在压缩图片...");
@@ -110,23 +126,24 @@ export async function preprocessImageForAnalyze(file: File, onProgress?: (text: 
     let blob = await canvasToBlob(canvas, quality);
 
     if (!blob || blob.size <= 0) {
-      return fallbackToOriginal(file);
+      return toPreparedFromFile(file);
     }
 
     while (blob.size > TARGET_MAX_BYTES && quality > MIN_QUALITY) {
       quality = Math.max(MIN_QUALITY, quality - QUALITY_STEP);
       const nextBlob = await canvasToBlob(canvas, quality);
       if (!nextBlob || nextBlob.size <= 0) {
-        return fallbackToOriginal(file);
+        return toPreparedFromFile(file);
       }
       blob = nextBlob;
     }
 
+    if (blob.size <= 0) {
+      throw new Error(IOS_FORMAT_TIP);
+    }
     if (blob.size > HARD_MAX_BYTES) {
       throw new Error("图片过大，请重试/换一张更清晰但更小的照片");
     }
-
-    onProgress?.("图片处理完成，准备开始诊断...");
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "geometry";
     const outputFile = new File([blob], `${baseName}.jpg`, {
@@ -135,21 +152,26 @@ export async function preprocessImageForAnalyze(file: File, onProgress?: (text: 
     });
 
     if (!isValidFile(outputFile)) {
-      return fallbackToOriginal(file);
+      throw new Error(IOS_FORMAT_TIP);
     }
 
     const dataUrl = await readAsDataUrl(outputFile);
+    onProgress?.("图片处理完成，准备开始诊断...");
     return {
       file: outputFile,
       dataUrl,
       width,
       height,
       bytes: outputFile.size,
+      mimeType: outputFile.type || "image/jpeg",
     };
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("图片过大")) {
+  } catch (error: any) {
+    if (error instanceof Error && (error.message.includes("图片过大") || error.message.includes("格式不支持"))) {
       throw error;
     }
-    return fallbackToOriginal(file);
+    if (isHeicLike(file)) {
+      throw new Error(IOS_FORMAT_TIP);
+    }
+    return toPreparedFromFile(file);
   }
 }

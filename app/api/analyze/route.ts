@@ -9,13 +9,13 @@ type AnalyzeSuccess = {
   rootCause: string;
   coachAdvice: string;
   riskWarning: string;
+  verdict: string;
+  evidenceBullets: [string, string];
   threeDayPlan: Array<{ day: number; task: string }>;
   inputHashTail: string;
   fallback: boolean;
   source: "model" | "cache" | "fallback";
   MODEL_FAILED: boolean;
-  verdict: string;
-  evidenceBullets: [string, string];
 };
 
 type AnalyzeErrorPayload = {
@@ -167,7 +167,6 @@ function buildFallbackSuccess(input: {
   cause: string;
   note: string;
   inputHashTail: string;
-  reason: string;
   isMock?: boolean;
 }): AnalyzeSuccess {
   const causeLabel =
@@ -185,8 +184,8 @@ function buildFallbackSuccess(input: {
     riskWarning: "这步不修，后面的证明题会持续丢分。",
     verdict: "这题不是不会，是关键一步总掉链子。",
     evidenceBullets: [
-      "题干/图形线索：图中已知关系和目标结论没有先对应起来。",
-      "草稿线索：步骤写到一半中断，缺少关键过渡句。",
+      "题干/图形证据：图中已知关系和目标结论没有先对应起来。",
+      "草稿/手写证据：步骤写到一半中断，缺少关键过渡句。",
     ],
     threeDayPlan: [
       { day: 1, task: "只练开头第一步，不追求整题做完。" },
@@ -231,7 +230,6 @@ function safeParseModelJson(raw: string, inputHashTail: string): AnalyzeSuccess 
     typeof parsed?.riskWarning === "string" && parsed.riskWarning.trim().length > 0
       ? parsed.riskWarning.trim()
       : "这步不修，后面的证明题会持续丢分。";
-
   const verdict =
     typeof parsed?.verdict === "string" && parsed.verdict.trim().length > 0
       ? parsed.verdict.trim()
@@ -278,12 +276,7 @@ function mapModelError(error: any): AnalyzeApiError {
       "请稍后重试，或先检查服务状态。"
     );
   }
-  return new AnalyzeApiError(
-    500,
-    "VISION_UNKNOWN_ERROR",
-    "诊断服务发生未知错误。",
-    "请稍后重试。"
-  );
+  return new AnalyzeApiError(500, "VISION_UNKNOWN_ERROR", "诊断服务发生未知错误。", "请稍后重试。");
 }
 
 function buildErrorPayload(params: {
@@ -304,7 +297,12 @@ function buildErrorPayload(params: {
 
 function ensureImageSize(imageBuffer: Buffer) {
   if (imageBuffer.length === 0) {
-    throw new AnalyzeApiError(400, "IMAGE_EMPTY", "上传图片为空。", "请重新拍照或选择图片后再试。");
+    throw new AnalyzeApiError(
+      400,
+      "IMAGE_EMPTY",
+      "上传图片为空。",
+      "图片为空/格式不支持，请改用相册或把相机格式改为‘兼容性最佳(JPG)’"
+    );
   }
   if (imageBuffer.length > ANALYZE_MAX_IMAGE_BYTES) {
     throw new AnalyzeApiError(
@@ -385,7 +383,6 @@ export async function POST(req: Request) {
 
     const cacheHit = getAnalyzeCacheHit(payload.inputHash);
     if (cacheHit) {
-      console.log(`[Analyze API][${requestId}] cache hit hash=${payload.inputHash.slice(0, 8)}`);
       return NextResponse.json(
         {
           ...cacheHit,
@@ -406,7 +403,6 @@ export async function POST(req: Request) {
           cause: payload.cause,
           note: payload.note,
           inputHashTail,
-          reason: "FORCE_MOCK",
           isMock: true,
         });
       }
@@ -416,7 +412,6 @@ export async function POST(req: Request) {
           cause: payload.cause,
           note: payload.note,
           inputHashTail,
-          reason: "VISION_KEY_MISSING",
         });
       }
 
@@ -436,7 +431,6 @@ export async function POST(req: Request) {
           cause: payload.cause,
           note: payload.note,
           inputHashTail,
-          reason: mapped.errorCode,
         });
       }
     };
@@ -450,8 +444,6 @@ export async function POST(req: Request) {
 
     if (!existingInFlight) {
       inFlightAnalyze.set(payload.inputHash, analyzePromise);
-    } else {
-      console.log(`[Analyze API][${requestId}] coalesced hash=${payload.inputHash.slice(0, 8)}`);
     }
 
     const result = await analyzePromise;
@@ -496,6 +488,7 @@ export async function POST(req: Request) {
 export async function OPTIONS(req: Request) {
   const requestId = Math.random().toString(36).substring(2, 10).toUpperCase();
   logMethodPath(req, requestId, "preflight");
+
   return new NextResponse(null, {
     status: 204,
     headers: {

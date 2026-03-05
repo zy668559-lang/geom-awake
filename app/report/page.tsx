@@ -91,7 +91,7 @@ export default function ReportPage() {
           {data.inputHashTail ? <p className="mt-3 text-xs text-slate-400">诊断指纹：{data.inputHashTail}</p> : null}
           {data.MODEL_FAILED || data.source === "fallback" ? (
             <p className="mt-3 text-sm font-bold text-amber-600">
-              当前为兜底诊断（MODEL_FAILED），建议换清晰草稿后点击重试获得模型精诊结果。
+              当前为兜底诊断（MODEL_FAILED），建议换清晰草稿后点击重试获取模型精诊结果。
             </p>
           ) : null}
         </section>
@@ -154,14 +154,14 @@ export default function ReportPage() {
             className="w-full bg-white border border-slate-200 text-slate-700 text-lg font-bold py-5 rounded-[24px] shadow-sm hover:bg-slate-50 transition-all"
             onClick={() => router.push(`/repair/day/1?cause=${cause}`)}
           >
-            开始修复（7天训练）
+            开始修复（7天）
           </button>
 
           <button
             className="w-full bg-[#1A1A1A] text-white text-lg font-bold py-5 rounded-[24px] shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             onClick={() => router.push(`/upsell?cause=${cause}`)}
           >
-            我想直接稳分（选A/B）
+            直接稳分（选A/B）
             <ArrowRight size={20} />
           </button>
         </section>

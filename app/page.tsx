@@ -31,7 +31,7 @@ export default function HomePage() {
   const handleImageSelected = async (file: File | undefined) => {
     if (!file || isPreparing) return;
     if (!Number.isFinite(file.size) || file.size <= 0) {
-      setErrorText("图片文件无效，请重新选择");
+      setErrorText("图片为空/格式不支持，请改用相册或把相机格式改为‘兼容性最佳(JPG)’");
       return;
     }
 
@@ -42,12 +42,11 @@ export default function HomePage() {
     try {
       const prepared = await preprocessImageForAnalyze(file, (text) => setProgressText(text));
       const sid = buildSessionId();
-
       localStorage.setItem("pending_geometry_sid", sid);
       localStorage.setItem("pending_geometry_image", prepared.dataUrl);
       localStorage.setItem("pending_geometry_file_name", prepared.file.name);
       localStorage.setItem("pending_geometry_file_size", String(prepared.file.size));
-
+      localStorage.setItem("pending_geometry_file_mime", prepared.mimeType);
       router.push(`/processing?sid=${encodeURIComponent(sid)}`);
     } catch (error: any) {
       setErrorText(error?.message || "图片处理失败，请换一张清晰的题图再试。");

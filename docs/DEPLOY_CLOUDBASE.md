@@ -28,13 +28,33 @@ Provider routing:
 - If `DASHSCOPE_API_KEY` exists, diagnosis uses Qwen-VL.
 - Else, diagnosis falls back to Gemini provider.
 
-## Upload Payload Notes
-- Client compresses image before upload:
-  - max edge `<= 1280px`
-  - JPEG quality about `0.7`
+## Mobile Upload Tips (iOS/WeChat)
+- `/processing` keeps two explicit entries:
+  - `拍照上传` (camera capture)
+  - `从相册选择` (album picker)
+- Before submit, UI always shows:
+  - selected image preview
+  - file name
+  - MIME type
+  - file size
+- Client preprocessing:
+  - longest edge `<= 1280px`
+  - JPEG quality around `0.7`
   - target `<= 900KB`, hard cap `1MB`
-- If still too large, UI message:
-  - `图片过大，请重试/换一张更清晰但更小的照片`
+
+## Troubleshooting (IMAGE_EMPTY / payload-too-large)
+- If user sees `IMAGE_EMPTY` or `图片为空/格式不支持`:
+  - retry via `从相册选择`
+  - on iOS camera settings switch to `兼容性最佳 (JPG)`
+  - avoid HEIC source when possible
+- If user sees `IMAGE_TOO_LARGE` or payload warning:
+  - crop to one question area only
+  - reduce background and retake with better light
+  - retry upload after compression
+- Server guard behavior:
+  - empty bytes -> `400 IMAGE_EMPTY`
+  - oversized image -> `413 IMAGE_TOO_LARGE`
+  - model provider failure -> response includes `MODEL_FAILED=true`
 
 ## Security Checklist
 - `.env.local` and all secret env files must stay ignored.

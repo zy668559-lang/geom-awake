@@ -56,9 +56,9 @@ function estimateBytesFromBase64(input: string): number {
 
 function dataUrlToFile(dataUrl: string, fileName: string): File {
   const hasPrefix = dataUrl.includes(",");
-  const [meta, content] = hasPrefix ? dataUrl.split(",", 2) : ["data:image/png;base64", dataUrl];
+  const [meta, content] = hasPrefix ? dataUrl.split(",", 2) : ["data:image/jpeg;base64", dataUrl];
   const mimeMatch = meta?.match(/data:(.*?);base64/);
-  const mimeType = mimeMatch?.[1] || "image/png";
+  const mimeType = mimeMatch?.[1] || "image/jpeg";
   const binary = atob(content || "");
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
@@ -87,6 +87,7 @@ function ProcessingPageContent() {
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
   const [selectedFileSize, setSelectedFileSize] = useState(0);
+  const [selectedFileMime, setSelectedFileMime] = useState("");
 
   const hasInitialized = useRef(false);
   const processingLockRef = useRef(false);
@@ -97,8 +98,8 @@ function ProcessingPageContent() {
   const hasValidImage = demoMode || (Boolean(imageBase64) && selectedFileSize > 0);
   const fileMetaText = useMemo(() => {
     if (!selectedFileName && selectedFileSize <= 0) return "";
-    return `${selectedFileName || "已选图片"} · ${prettyBytes(selectedFileSize)}`;
-  }, [selectedFileName, selectedFileSize]);
+    return `${selectedFileName || "已选图片"} · ${selectedFileMime || "unknown"} · ${prettyBytes(selectedFileSize)}`;
+  }, [selectedFileName, selectedFileSize, selectedFileMime]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -106,8 +107,10 @@ function ProcessingPageContent() {
 
     const pendingImage = localStorage.getItem("pending_geometry_image");
     const pendingName = localStorage.getItem("pending_geometry_file_name") || "";
+    const pendingMime = localStorage.getItem("pending_geometry_file_mime") || "";
     const pendingSizeRaw = Number.parseInt(localStorage.getItem("pending_geometry_file_size") || "0", 10);
-    const pendingSize = Number.isFinite(pendingSizeRaw) && pendingSizeRaw > 0 ? pendingSizeRaw : estimateBytesFromBase64(pendingImage || "");
+    const pendingSize =
+      Number.isFinite(pendingSizeRaw) && pendingSizeRaw > 0 ? pendingSizeRaw : estimateBytesFromBase64(pendingImage || "");
 
     const sidFromQuery = searchParams.get("sid");
     const sidFromStorage = localStorage.getItem("pending_geometry_sid");
@@ -124,8 +127,9 @@ function ProcessingPageContent() {
 
     if (pendingImage || demoMode) {
       setImageBase64(pendingImage || "demo-image");
-      setSelectedFileName(pendingName || "uploaded-image");
+      setSelectedFileName(pendingName || "uploaded-image.jpg");
       setSelectedFileSize(demoMode ? 1 : pendingSize);
+      setSelectedFileMime(pendingMime || "image/jpeg");
       setState("INTERACTING");
       setErrorMessage("");
       return;
@@ -152,9 +156,8 @@ function ProcessingPageContent() {
 
   const handleImageSelected = async (file: File | undefined) => {
     if (!file || isPreparingImage || isProcessing) return;
-
     if (!Number.isFinite(file.size) || file.size <= 0) {
-      showFlowError("图片文件无效，请重新选择。");
+      showFlowError("图片为空/格式不支持，请改用相册或把相机格式改为‘兼容性最佳(JPG)’");
       return;
     }
 
@@ -165,17 +168,19 @@ function ProcessingPageContent() {
     try {
       const prepared = await preprocessImageForAnalyze(file, (text) => setPrepareText(text));
       if (!prepared.file || prepared.file.size <= 0 || !prepared.dataUrl) {
-        showFlowError("图片处理失败，请重新上传。");
+        showFlowError("图片为空/格式不支持，请改用相册或把相机格式改为‘兼容性最佳(JPG)’");
         return;
       }
 
       localStorage.setItem("pending_geometry_image", prepared.dataUrl);
       localStorage.setItem("pending_geometry_file_name", prepared.file.name);
       localStorage.setItem("pending_geometry_file_size", String(prepared.file.size));
+      localStorage.setItem("pending_geometry_file_mime", prepared.mimeType);
 
       setImageBase64(prepared.dataUrl);
       setSelectedFileName(prepared.file.name);
       setSelectedFileSize(prepared.file.size);
+      setSelectedFileMime(prepared.mimeType);
       setState("INTERACTING");
       setPrepareText("");
     } catch (error: any) {
@@ -199,9 +204,9 @@ function ProcessingPageContent() {
 
   const handleStartDiagnosis = async (point: string) => {
     if (isProcessing || processingLockRef.current) return;
-
     const finalPoint = (point || stuckPoint).trim();
     if (!finalPoint) return;
+
     if (!hasValidImage) {
       showFlowError("请先上传有效图片（文件不能为空）。");
       return;
@@ -232,7 +237,7 @@ function ProcessingPageContent() {
       const cause = inferCauseFromNote(finalPoint);
       const imageFile = dataUrlToFile(imageBase64 as string, `geometry-${sessionId || Date.now().toString(36)}.jpg`);
       if (!imageFile || imageFile.size <= 0) {
-        throw new Error("上传图片为空，请重新上传。");
+        throw new Error("图片为空/格式不支持，请改用相册或把相机格式改为‘兼容性最佳(JPG)’");
       }
 
       const formData = new FormData();
@@ -298,18 +303,16 @@ function ProcessingPageContent() {
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onCameraChange} />
       <input ref={albumInputRef} type="file" accept="image/*" className="hidden" onChange={onAlbumChange} />
 
-      <div className="relative mb-12">
-        <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center animate-pulse">
-          {state === "IDENTIFYING" && <Search className="text-slate-400 w-12 h-12 animate-bounce" />}
-          {state === "INTERACTING" && <MessageCircle className="text-blue-500 w-12 h-12" />}
-          {state === "REASONING" && <Brain className="text-[#667EEA] w-12 h-12 animate-spin-slow" />}
+      <div className="relative mb-10">
+        <div className="w-28 h-28 bg-slate-50 rounded-full flex items-center justify-center animate-pulse">
+          {state === "IDENTIFYING" && <Search className="text-slate-400 w-10 h-10 animate-bounce" />}
+          {state === "INTERACTING" && <MessageCircle className="text-blue-500 w-10 h-10" />}
+          {state === "REASONING" && <Brain className="text-[#667EEA] w-10 h-10 animate-spin-slow" />}
         </div>
-        <div className="absolute inset-0 w-32 h-32 border-4 border-[#667EEA]/20 rounded-full" />
-        <div className="absolute inset-0 w-32 h-32 border-4 border-t-[#667EEA] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin" />
       </div>
 
-      <div className="max-w-xl mx-auto space-y-6">
-        <h2 className="text-2xl font-black text-slate-800 leading-snug min-h-[4rem]">{STEPS[state]}</h2>
+      <div className="max-w-xl mx-auto space-y-5 w-full">
+        <h2 className="text-2xl font-black text-slate-800 leading-snug min-h-[3.5rem]">{STEPS[state]}</h2>
         {isProcessing ? <p className="text-sm font-bold text-[#667EEA]">陈老师正在全神贯注诊断中...</p> : null}
 
         {isPreparingImage ? (
@@ -319,8 +322,18 @@ function ProcessingPageContent() {
           </div>
         ) : null}
 
-        {fileMetaText ? (
-          <p className="text-xs font-bold text-slate-500">当前图片：{fileMetaText}</p>
+        {imageBase64 ? (
+          <section className="rounded-2xl border border-slate-200 p-3 bg-white text-left">
+            <div className="flex items-start gap-3">
+              <img src={imageBase64} alt="selected" className="w-20 h-20 object-cover rounded-lg border border-slate-200" />
+              <div className="text-xs text-slate-600 space-y-1">
+                <p className="font-bold text-slate-800">已选图片</p>
+                <p>{selectedFileName || "unknown"}</p>
+                <p>MIME: {selectedFileMime || "unknown"}</p>
+                <p>大小: {prettyBytes(selectedFileSize)}</p>
+              </div>
+            </div>
+          </section>
         ) : null}
 
         {errorMessage ? (
@@ -350,7 +363,7 @@ function ProcessingPageContent() {
         ) : null}
 
         {!hasValidImage && !isProcessing && !demoMode ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <p className="text-xs text-slate-500">先传一张题图，再开始诊断。</p>
             <div className="grid gap-2 md:grid-cols-2">
               <button
@@ -376,7 +389,7 @@ function ProcessingPageContent() {
         ) : null}
 
         {state === "INTERACTING" ? (
-          <div className="grid gap-3 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid gap-3 w-full">
             {STUCK_OPTIONS.map((opt) => (
               <button
                 key={opt}
@@ -390,7 +403,7 @@ function ProcessingPageContent() {
                 <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             ))}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-2 flex gap-2">
               <input
                 placeholder="或者你自己写一句也行..."
                 className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
@@ -408,15 +421,6 @@ function ProcessingPageContent() {
             </div>
           </div>
         ) : null}
-      </div>
-
-      <div className="flex gap-2 mt-12 pb-12">
-        {["IDENTIFYING", "INTERACTING", "REASONING"].map((step) => (
-          <div
-            key={step}
-            className={`h-1.5 rounded-full transition-all duration-500 ${state === step ? "w-8 bg-slate-800" : "w-1.5 bg-slate-200"}`}
-          />
-        ))}
       </div>
     </div>
   );

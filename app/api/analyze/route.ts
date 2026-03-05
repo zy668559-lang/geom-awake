@@ -25,6 +25,7 @@ type AnalyzeErrorPayload = {
 type ParseAnalyzePayload = {
   imageBase64: string;
   mimeType: string;
+  imageBytes: number;
   cause: string;
   note: string;
   inputHash: string;
@@ -51,6 +52,7 @@ class AnalyzeApiError extends Error {
 
 const analyzeCache = new Map<string, CacheEntry>();
 const inFlightAnalyze = new Map<string, Promise<AnalyzeSuccess>>();
+let analyzeCallCount = 0;
 
 function readIntEnv(name: string, fallback: number): number {
   const value = Number.parseInt(process.env[name] || "", 10);
@@ -58,7 +60,7 @@ function readIntEnv(name: string, fallback: number): number {
 }
 
 const ANALYZE_CACHE_TTL_MS = readIntEnv("ANALYZE_CACHE_TTL_MS", 120000);
-const ANALYZE_MAX_IMAGE_BYTES = 2_000_000;
+const ANALYZE_MAX_IMAGE_BYTES = 1_000_000;
 
 function logMethodPath(req: Request, requestId: string, tag: string) {
   const pathname = new URL(req.url).pathname;
@@ -267,8 +269,8 @@ function ensureImageSize(imageBuffer: Buffer) {
     throw new AnalyzeApiError(
       413,
       "IMAGE_TOO_LARGE",
-      "图片超过2MB，服务端无法稳定处理。",
-      "请先裁剪题目区域，或重新上传更小图片。"
+      "图片超过1MB，服务端无法稳定处理。",
+      "图片过大，请重试/换一张更清晰但更小的照片"
     );
   }
 }
@@ -292,7 +294,14 @@ async function parseAnalyzePayload(req: Request): Promise<ParseAnalyzePayload> {
     const imageBase64 = imageBuffer.toString("base64");
     const mimeType = imageEntry.type || "image/jpeg";
     const inputHash = buildInputHash(imageBuffer, note, cause);
-    return { imageBase64, mimeType, cause, note, inputHash };
+    return {
+      imageBase64,
+      mimeType,
+      imageBytes: imageBuffer.length,
+      cause,
+      note,
+      inputHash,
+    };
   }
 
   const jsonBody = (await req.json().catch(() => null)) as any;
@@ -306,7 +315,14 @@ async function parseAnalyzePayload(req: Request): Promise<ParseAnalyzePayload> {
   const imageBuffer = Buffer.from(base64Raw, "base64");
   ensureImageSize(imageBuffer);
   const inputHash = buildInputHash(imageBuffer, note, cause);
-  return { imageBase64: base64Raw, mimeType: "image/jpeg", cause, note, inputHash };
+  return {
+    imageBase64: base64Raw,
+    mimeType: "image/jpeg",
+    imageBytes: imageBuffer.length,
+    cause,
+    note,
+    inputHash,
+  };
 }
 
 export async function POST(req: Request) {
@@ -319,6 +335,10 @@ export async function POST(req: Request) {
   try {
     const payload = await parseAnalyzePayload(req);
     inputHashTail = payload.inputHash.slice(-8);
+    analyzeCallCount += 1;
+    console.log(
+      `[Analyze API][${requestId}] payload mime=${payload.mimeType} bytes=${payload.imageBytes} callCount=${analyzeCallCount}`
+    );
 
     const cacheHit = getAnalyzeCacheHit(payload.inputHash);
     if (cacheHit) {

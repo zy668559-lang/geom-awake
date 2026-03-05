@@ -1,55 +1,51 @@
-# CloudBase Deploy Guide (Tencent)
+# CloudBase Run 部署指南（中国可访问）
 
-This guide deploys the current Next.js app to Tencent CloudBase as a China-accessible alternative.
+## 1) CloudBase 控制台配置（逐步点击）
+1. 腾讯云控制台 -> CloudBase -> 进入目标环境。
+2. 打开 `云托管 CloudBase Run` -> `新建服务` -> 选择 `从代码仓库部署（GitHub）`。
+3. 选择仓库与分支：`geometry-mvp` / `main`。
+4. 构建配置：
+   - 安装命令：`npm ci`
+   - 构建命令：`npm run build`
+   - 启动命令：`npm run start`
+   - Node 版本：`20`（建议）
+5. 端口配置（必须）：
+   - 容器监听端口：`3000`
+   - 公网访问端口：`80`
+6. 环境变量配置（服务设置 -> 环境变量）：
+   - 必填：`GEMINI_API_KEY`
+   - 可选：`ANALYZE_CACHE_TTL_MS`
+   - 本项目不需要新增外部服务变量。
+7. 点击部署，等待状态为 `运行中`。
 
-## 0) Prerequisites
-- Tencent Cloud account with CloudBase enabled.
-- This repo connected to GitHub.
-- Branch to deploy: `main`.
+## 2) 项目脚本（来自 package.json）
+- 本地开发：`npm run dev`（等价 `next dev -p 3000`）
+- 生产构建：`npm run build`（`next build`）
+- 生产启动：`npm run start`（`next start`）
 
-## 1) Build/Start Scripts (from `package.json`)
-- Dev: `npm run dev` (internally `next dev -p 3000`)
-- Build: `npm run build` (internally `next build`)
-- Start: `npm run start` (internally `next start`)
+## 3) 上传与体积策略（本次上线重点）
+- 前端上传前压缩：
+  - 最长边 `<= 1600px`
+  - 转 JPEG，质量约 `0.75`
+  - 目标 `<= 900KB`，硬上限 `1MB`
+- 若压缩后仍超限，前端提示：
+  - `图片过大，请重试/换一张更清晰但更小的照片`
 
-CloudBase should use:
-- Install command: `npm ci` (or `npm install`)
-- Build command: `npm run build`
-- Start command: `npm run start`
+## 4) 安全检查清单（SECURITY）
+- `.env.local` 必须被忽略，不得提交。
+- API Key 只放在 CloudBase 环境变量，不写入仓库。
+- 提交前执行：
+  - `git ls-files | rg "^(\\.env|.*\\/\\.env)"`
+  - `git status`
 
-## 2) CloudBase UI Steps
-1. Open Tencent Cloud console -> CloudBase -> your environment.
-2. Go to `Hosting` (or `Web 应用托管`) -> `Create`.
-3. Choose `Import from GitHub` and select this repository.
-4. Set branch to `main`.
-5. Framework: `Next.js` (auto-detect if available).
-6. Build settings:
-   - Install: `npm ci`
-   - Build: `npm run build`
-   - Start: `npm run start`
-   - Node version: `18+` (recommended `20`).
-7. Environment variables:
-   - Add `GEMINI_API_KEY` in CloudBase environment variables.
-   - Optional: `ANALYZE_CACHE_TTL_MS`.
-8. Click `Deploy` and wait for status `Running/Available`.
-
-## 3) Notes
-- Do not upload `.env.local` to Git.
-- Keep API path unchanged: `/api/analyze`.
-- If diagnosis fails with quota/permission, the API returns structured error JSON with `errorCode/reason/nextStep`.
-
-## 4) Acceptance Checklist (3 steps)
-1. Processing -> Report:
-   - Open `${BASE_URL}/processing`, upload image, select one cause, click `确定`.
-   - Expect one `POST /api/analyze`, then route to `/report` (or explicit structured error message).
-2. Upsell -> Confirm:
-   - Open `${BASE_URL}/upsell?cause=draw_line`.
-   - Click `我选A` or `我选B`, expect route to `/confirm?pkg=A|B&cause=draw_line`.
-3. Playwright diagnostic:
-   - Run command below locally and ensure PASS.
-
-## 5) Acceptance Commands (exact)
-```bash
-npm run dev -- -p 3000
-npx playwright test tests/diagnostic.spec.ts --project=chromium
-```
+## 5) 三步验收（必须全通过）
+1. `processing -> report`：
+   - 打开 `${BASE_URL}/processing`
+   - 上传真实照片（<1MB），选择卡点后点击 `确定`
+   - 期望进入 `/report`，且文案不是 demo 固定文案。
+2. `upsell -> confirm`：
+   - 打开 `${BASE_URL}/upsell?cause=draw_line`
+   - 点击 A 或 B，跳转到 `/confirm?pkg=A|B&cause=draw_line`
+3. Playwright 网络审计：
+   - 执行 `npx playwright test tests/diagnostic.spec.ts --project=chromium`
+   - 必须 PASS，且保持 `1 click = 1 request`。

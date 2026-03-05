@@ -1,5 +1,6 @@
-﻿import sharp from "sharp";
+import sharp from "sharp";
 import { generateHash, getCachedResult, setCachedResult } from "./cache";
+import { buildDiagnoseUserPrompt, DIAGNOSE_SYSTEM_PROMPT } from "@/prompts/diagnose";
 
 export type GeminiDiagnoseInput = {
   imageBase64: string;
@@ -9,19 +10,19 @@ export type GeminiDiagnoseInput = {
   requestId: string;
 };
 
-class GeminiApiError extends Error {
+class VisionApiError extends Error {
   status?: number;
   rawData?: unknown;
 
   constructor(message: string, status?: number, rawData?: unknown) {
     super(message);
-    this.name = "GeminiApiError";
+    this.name = "VisionApiError";
     this.status = status;
     this.rawData = rawData;
   }
 }
 
-class GeminiQueue {
+class VisionQueue {
   private queue: Array<() => Promise<void>> = [];
   private processing = false;
 
@@ -29,8 +30,7 @@ class GeminiQueue {
     return new Promise((resolve, reject) => {
       this.queue.push(async () => {
         try {
-          const value = await task();
-          resolve(value);
+          resolve(await task());
         } catch (error) {
           reject(error);
         }
@@ -42,19 +42,15 @@ class GeminiQueue {
   private async process() {
     if (this.processing) return;
     this.processing = true;
-
     while (this.queue.length > 0) {
       const task = this.queue.shift();
-      if (task) {
-        await task();
-      }
+      if (task) await task();
     }
-
     this.processing = false;
   }
 }
 
-const geminiQueue = new GeminiQueue();
+const visionQueue = new VisionQueue();
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 const MAX_RETRIES = 3;
 
@@ -72,112 +68,168 @@ async function optimizeImage(base64: string): Promise<string> {
     .resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 82 })
     .toBuffer();
-
   return optimized.toString("base64");
 }
 
-function buildPrompt(cause: string, note: string): string {
-  return [
-    "你是陈老师，做初中几何思维诊断。请结合图片和学生描述输出严格 JSON。",
-    "禁止直接给最终解题答案，只能给诊断和纠偏动作。",
-    "文风要求：口语化、短句、家长能听懂，不要堆术语。",
-    "输出字段必须是: stuckPoint, rootCause, coachAdvice, riskWarning, threeDayPlan。",
-    "threeDayPlan 必须是长度3的数组，每个元素包含 day(1-3) 和 task(一句话，可立刻执行)。",
-    "riskWarning 必须是一句话，说明不修这个问题会丢什么分或出什么后果。",
-    `错因线索: ${cause || "unknown"}`,
-    `学生卡点描述: ${note || "未提供"}`,
-  ].join("\n");
+function resolveVisionProvider(): "dashscope" | "gemini" {
+  if (process.env.DASHSCOPE_API_KEY) return "dashscope";
+  return "gemini";
 }
 
-function getApiKey(): string {
+function parseOpenAICompatibleText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    const textParts = content
+      .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+      .filter(Boolean);
+    return textParts.join("\n").trim();
+  }
+  return "";
+}
+
+async function callDashScopeVision(input: GeminiDiagnoseInput, optimizedData: string): Promise<string> {
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  if (!apiKey) {
+    throw new VisionApiError("DASHSCOPE_API_KEY is not configured", 403);
+  }
+
+  const model = process.env.DASHSCOPE_VISION_MODEL || "qwen-vl-max-latest";
+  const userPrompt = buildDiagnoseUserPrompt(input.cause, input.note);
+  const imageDataUrl = `data:image/jpeg;base64,${optimizedData}`;
+
+  const response = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      max_tokens: 1200,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: DIAGNOSE_SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt },
+            { type: "image_url", image_url: { url: imageDataUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const rawText = await response.text();
+    throw new VisionApiError(`DashScope error ${response.status}: ${rawText || response.statusText}`, response.status, {
+      rawText,
+    });
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  const text = parseOpenAICompatibleText(content);
+  if (!text) {
+    throw new VisionApiError("DashScope returned empty text", 502, data);
+  }
+  return text;
+}
+
+async function callGeminiVision(input: GeminiDiagnoseInput, optimizedData: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new GeminiApiError("GEMINI_API_KEY is not configured", 403);
+    throw new VisionApiError("GEMINI_API_KEY is not configured", 403);
   }
-  return apiKey;
+
+  const userPrompt = buildDiagnoseUserPrompt(input.cause, input.note);
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: DIAGNOSE_SYSTEM_PROMPT }] },
+        contents: [
+          {
+            parts: [
+              { text: userPrompt },
+              { inlineData: { data: optimizedData, mimeType: "image/jpeg" } },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+          maxOutputTokens: 1200,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const rawText = await response.text();
+    throw new VisionApiError(`Gemini error ${response.status}: ${rawText || response.statusText}`, response.status, {
+      rawText,
+    });
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text || typeof text !== "string") {
+    throw new VisionApiError("Gemini returned empty text", 502, data);
+  }
+  return text;
 }
 
 export async function diagnoseGeometryWithGemini(input: GeminiDiagnoseInput): Promise<string> {
   const { imageBase64, cause, note, requestId } = input;
-  const apiKey = getApiKey();
-
   const contentHash = generateHash(`${imageBase64}|${cause}|${note}`);
   const cached = getCachedResult(contentHash);
   if (cached) {
-    console.log(`[Gemini][${requestId}] cache hit key=${contentHash.slice(0, 8)}`);
+    console.log(`[Vision][${requestId}] cache hit key=${contentHash.slice(0, 8)}`);
     return cached;
   }
 
-  return geminiQueue.add(async () => {
+  return visionQueue.add(async () => {
     const optimizedData = await optimizeImage(imageBase64);
+    const provider = resolveVisionProvider();
+    console.log(`[Vision][${requestId}] provider=${provider}`);
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      const attemptTag = `[Gemini][${requestId}] attempt ${attempt}/${MAX_RETRIES}`;
+      const attemptTag = `[Vision][${requestId}] attempt ${attempt}/${MAX_RETRIES}`;
       try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: buildPrompt(cause, note) },
-                    { inlineData: { data: optimizedData, mimeType: "image/jpeg" } },
-                  ],
-                },
-              ],
-              generationConfig: {
-                responseMimeType: "application/json",
-                temperature: 0.2,
-                maxOutputTokens: 1200,
-              },
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const rawText = await response.text();
-          const status = response.status;
-          const retryable = RETRYABLE_STATUSES.has(status);
-          console.warn(`${attemptTag} failed status=${status} retryable=${retryable}`);
-
-          if (!retryable || attempt === MAX_RETRIES) {
-            throw new GeminiApiError(`Gemini error ${status}: ${rawText || response.statusText}`, status, {
-              rawText,
-            });
-          }
-
-          await sleep(300 * 2 ** (attempt - 1));
-          continue;
-        }
-
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text || typeof text !== "string") {
-          throw new GeminiApiError("Gemini returned empty text", 502, data);
-        }
+        const text =
+          provider === "dashscope"
+            ? await callDashScopeVision(input, optimizedData)
+            : await callGeminiVision(input, optimizedData);
 
         setCachedResult(contentHash, text);
         return text;
       } catch (error) {
-        if (error instanceof GeminiApiError) {
-          throw error;
+        if (error instanceof VisionApiError) {
+          const status = Number(error.status || 500);
+          const retryable = RETRYABLE_STATUSES.has(status);
+          console.warn(`${attemptTag} failed provider=${provider} status=${status} retryable=${retryable}`);
+          if (!retryable || attempt === MAX_RETRIES) {
+            throw error;
+          }
+          await sleep(300 * 2 ** (attempt - 1));
+          continue;
         }
 
         const asMessage = error instanceof Error ? error.message : String(error);
         console.warn(`${attemptTag} unexpected error=${asMessage}`);
-
         if (attempt === MAX_RETRIES) {
-          throw new GeminiApiError(`Gemini request failed: ${asMessage}`, 500);
+          throw new VisionApiError(`Vision request failed: ${asMessage}`, 500);
         }
-
         await sleep(300 * 2 ** (attempt - 1));
       }
     }
 
-    throw new GeminiApiError("Gemini retry exhausted", 500);
+    throw new VisionApiError("Vision retry exhausted", 500);
   });
 }
 

@@ -9,19 +9,24 @@
    - Target directory: `.`
    - Dockerfile name: `Dockerfile`
 4. Runtime/Ports:
-   - Container port: use `PORT` (default `80` in Dockerfile)
+   - Container port: `3000` (Dockerfile default `PORT=3000`)
    - Public access port: `80`
-   - If your template asks mapping, set `80 -> 80`.
+   - If your template asks mapping, set `80 -> 3000`.
 5. Build/Start expectations (inside Dockerfile):
    - `npm ci`
    - `npm run build`
    - `npm run start -- -p ${PORT}`
 
 ## Required Environment Variables
+- `DASHSCOPE_API_KEY` (preferred for China deployment)
 - `GEMINI_API_KEY`
 - `DEEPSEEK_API_KEY`
 - `VISION_PROVIDER` (default: `gemini`)
 - Optional: `ANALYZE_CACHE_TTL_MS`
+
+Provider routing:
+- If `DASHSCOPE_API_KEY` exists, service uses Qwen-VL.
+- Else, fallback to Gemini provider.
 
 ## Upload Payload Notes
 - Client now compresses image before upload:
@@ -41,7 +46,7 @@
 ## 3-step Acceptance
 1. `${BASE_URL}/processing`:
    - upload real photo (<1MB), pick one cause, click once
-   - expect exactly one `POST /api/analyze`, then `/report`.
+   - expect exactly one `POST /api/analyze`, then `/report` (non-demo diagnosis text).
 2. `${BASE_URL}/upsell?cause=draw_line`:
    - click package A/B, expect `/confirm?pkg=A|B&cause=draw_line`.
 3. Local audit:

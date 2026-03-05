@@ -13,7 +13,7 @@ RUN npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
-ENV PORT=80
+ENV PORT=3000
 
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
@@ -21,5 +21,5 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
-EXPOSE 80
-CMD ["sh", "-c", "npm run start -- -p ${PORT:-80}"]
+EXPOSE 3000
+CMD ["sh", "-c", "npm run start -- -p ${PORT:-3000}"]

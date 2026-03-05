@@ -360,12 +360,12 @@ export async function POST(req: Request) {
         });
       }
 
-      if (!process.env.GEMINI_API_KEY) {
+      if (!process.env.DASHSCOPE_API_KEY && !process.env.GEMINI_API_KEY) {
         throw new AnalyzeApiError(
           503,
-          "GEMINI_KEY_MISSING",
+          "VISION_KEY_MISSING",
           "诊断服务密钥未配置，当前无法诊断。",
-          "请检查生产环境 GEMINI_API_KEY。"
+          "请检查生产环境 DASHSCOPE_API_KEY 或 GEMINI_API_KEY。"
         );
       }
 
